@@ -3,16 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tienda 3D Insumos - Sistema Completo</title>
+    <title>alforge3dstudio | AL FORGE · 3D STUDIO</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0b0e11;
+            background-image:
+                radial-gradient(ellipse at 12% 8%, rgba(249, 115, 22, 0.12), transparent 34rem),
+                radial-gradient(ellipse at 88% 42%, rgba(14, 116, 144, 0.10), transparent 38rem),
+                linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+            background-size: auto, auto, 48px 48px, 48px 48px;
+            background-attachment: fixed;
+        }
+    </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans">
 
     <!-- Header / Navegación -->
-    <header class="bg-slate-800 border-b border-slate-700 p-4 flex justify-between items-center sticky top-0 z-50">
-        <div class="flex items-center space-x-4">
-            <span class="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">CubeStore 3D</span>
+    <header class="bg-slate-950/85 backdrop-blur-md border-b border-orange-500/20 p-4 flex flex-wrap justify-between gap-4 items-center sticky top-0 z-50">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-3">
+                <svg class="h-12 w-12 shrink-0" viewBox="0 0 80 80" role="img" aria-label="Logo AL Forge">
+                    <defs>
+                        <linearGradient id="forgeLogo" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#fb923c"/>
+                            <stop offset="1" stop-color="#f97316"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="40" cy="40" r="39" fill="#080a0c" stroke="#334155" stroke-width="1"/>
+                    <path d="M17 49 34 22h8l17 27H48l-4-7H31l-4 7zm19-14h4l-2-4z" fill="url(#forgeLogo)"/>
+                    <path d="M48 22h8v20h10v7H48z" fill="url(#forgeLogo)"/>
+                    <text x="40" y="61" text-anchor="middle" fill="#e2e8f0" font-size="7" font-weight="700" letter-spacing="1">AL FORGE</text>
+                </svg>
+                <div class="leading-tight">
+                    <div class="text-lg sm:text-xl font-bold tracking-tight text-slate-100">alforge3dstudio</div>
+                    <div class="mt-1 text-[10px] sm:text-xs font-medium tracking-wide text-orange-300">AL FORGE | 3D STUDIO</div>
+                </div>
+            </div>
             <nav class="hidden md:flex space-x-4 text-sm text-slate-300">
                 <a href="#catalogo" class="hover:text-cyan-400">Catálogo</a>
                 <a href="#visor3d" class="hover:text-cyan-400">Entorno 3D</a>
@@ -300,8 +329,8 @@
     <!-- Script de Lógica -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = "https://TU-PROYECTO.supabase.co";
-        const SUPABASE_ANON_KEY = "TU_CLAVE_PUBLICA_ANON";
+        const SUPABASE_URL = "https://qqdkxkvxintudqscucgq.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_sRwp6xx37boKubOnnk9huA_2OchzMsw";
         const PRODUCT_IMAGE_BUCKET = "product-images";
         let supabaseClient = null;
         let usuarioActual = "Invitado";
