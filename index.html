@@ -321,8 +321,26 @@
                     <input type="password" id="inputUserPassword" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
                 </div>
                 <button id="authSubmitButton" onclick="realizarLogin()" class="w-full bg-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm hover:bg-cyan-400">Ingresar</button>
+                <button id="forgotPasswordButton" onclick="solicitarRestablecimiento()" class="w-full text-slate-400 text-xs hover:text-cyan-300">¿Olvidaste tu contraseña?</button>
                 <button id="authModeButton" onclick="alternarModoRegistro()" class="w-full text-cyan-300 text-xs hover:text-cyan-200">¿No tienes cuenta? Solicita acceso</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modalPasswordRecovery" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[60]">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-2xl p-6 space-y-4">
+            <h3 class="font-bold text-lg">Crear una contraseña nueva</h3>
+            <p class="text-xs text-slate-400">Elige una contraseña de al menos 8 caracteres.</p>
+            <div id="passwordRecoveryStatus" class="hidden rounded-lg border p-3 text-xs" role="status" aria-live="polite"></div>
+            <div>
+                <label class="block text-xs font-semibold mb-1" for="newPassword">Nueva contraseña</label>
+                <input type="password" id="newPassword" autocomplete="new-password" minlength="8" required placeholder="Mínimo 8 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold mb-1" for="confirmNewPassword">Repetir contraseña</label>
+                <input type="password" id="confirmNewPassword" autocomplete="new-password" minlength="8" required placeholder="Repite la contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+            </div>
+            <button onclick="guardarNuevaContrasena()" class="w-full bg-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm hover:bg-cyan-400">Guardar contraseña</button>
         </div>
     </div>
 
@@ -396,6 +414,11 @@
             }
 
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            supabaseClient.auth.onAuthStateChange(evento => {
+                if (evento === 'PASSWORD_RECOVERY') {
+                    document.getElementById('modalPasswordRecovery').classList.remove('hidden');
+                }
+            });
             document.getElementById('productForm').addEventListener('submit', guardarProducto);
             document.getElementById('adminProdMayorista').addEventListener('change', evento => {
                 document.getElementById('wholesalePriceField').classList.toggle('hidden', !evento.target.checked);
@@ -469,10 +492,17 @@
 
             try {
                 if (modoRegistro) {
+                    if (window.location.protocol === 'file:') {
+                        mostrarEstadoLogin("Para registrarte y volver desde el correo de confirmación, abre la tienda desde una dirección http:// o https:// (por ejemplo, con Live Server en VS Code). No la abras directamente como archivo.");
+                        return;
+                    }
                     const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
-                        options: { data: { full_name: nombre } }
+                        options: {
+                            data: { full_name: nombre },
+                            emailRedirectTo: `${window.location.origin}${window.location.pathname}`
+                        }
                     });
                     if (error) throw error;
                     if (data.session) {
@@ -492,9 +522,67 @@
             }
         }
 
+        function mostrarEstadoRestablecimiento(mensaje, exito = false) {
+            const estado = document.getElementById('passwordRecoveryStatus');
+            estado.className = `rounded-lg border p-3 text-xs ${exito ? 'bg-emerald-950 border-emerald-700 text-emerald-100' : 'bg-red-950 border-red-700 text-red-100'}`;
+            estado.textContent = mensaje;
+        }
+
+        async function solicitarRestablecimiento() {
+            if (window.location.protocol === 'file:') {
+                mostrarEstadoLogin("Abre la tienda publicada para solicitar el restablecimiento de contraseña.");
+                return;
+            }
+            const email = document.getElementById('inputUserLogin').value.trim();
+            if (!email) {
+                mostrarEstadoLogin("Escribe tu correo electrónico y vuelve a pulsar «¿Olvidaste tu contraseña?»."); 
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}${window.location.pathname}`
+                });
+                if (error) throw error;
+                mostrarEstadoLogin("Te enviamos un correo para restablecer la contraseña. Abre el enlace y sigue las instrucciones.", "success");
+            } catch (error) {
+                mostrarEstadoLogin(`No se pudo enviar el correo de restablecimiento: ${error.message}`);
+            }
+        }
+
+        async function guardarNuevaContrasena() {
+            const password = document.getElementById('newPassword').value;
+            const confirmacion = document.getElementById('confirmNewPassword').value;
+            if (password.length < 8) {
+                mostrarEstadoRestablecimiento("La contraseña debe tener al menos 8 caracteres.");
+                return;
+            }
+            if (password !== confirmacion) {
+                mostrarEstadoRestablecimiento("Las contraseñas no coinciden.");
+                return;
+            }
+
+            let usuario;
+            try {
+                const { data, error } = await supabaseClient.auth.updateUser({ password });
+                if (error) throw error;
+                usuario = data.user;
+            } catch (error) {
+                mostrarEstadoRestablecimiento(`No se pudo actualizar la contraseña: ${error.message}`);
+                return;
+            }
+
+            document.getElementById('modalPasswordRecovery').classList.add('hidden');
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+            mostrarEstado("Contraseña actualizada correctamente.", "success");
+            await iniciarSesionExistente();
+        }
+
         function alternarModoRegistro() {
             modoRegistro = !modoRegistro;
             document.getElementById('authNameField').classList.toggle('hidden', !modoRegistro);
+            document.getElementById('forgotPasswordButton').classList.toggle('hidden', modoRegistro);
             document.getElementById('authDescription').textContent = modoRegistro
                 ? "Crea tu cuenta con correo y contraseña. El administrador debe aprobar el acceso antes de comprar."
                 : "Ingresa con tu correo y contraseña o crea una cuenta. Las cuentas nuevas quedan pendientes de aprobación.";
