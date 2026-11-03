@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>alforge3dstudio | AL FORGE · 3D STUDIO</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0b0e11;
+            background-image:
+                radial-gradient(ellipse at 12% 8%, rgba(249, 115, 22, 0.12), transparent 34rem),
+                radial-gradient(ellipse at 88% 42%, rgba(14, 116, 144, 0.10), transparent 38rem),
+                linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+            background-size: auto, auto, 48px 48px, 48px 48px;
+            background-attachment: fixed;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans">
+
+    <!-- Header / Navegación -->
+    <header class="bg-slate-950/85 backdrop-blur-md border-b border-orange-500/20 p-4 flex flex-wrap justify-between gap-4 items-center sticky top-0 z-50">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-3">
+                <svg class="h-12 w-12 shrink-0" viewBox="0 0 80 80" role="img" aria-label="Logo AL Forge">
+                    <defs>
+                        <linearGradient id="forgeLogo" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#fb923c"/>
+                            <stop offset="1" stop-color="#f97316"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="40" cy="40" r="39" fill="#080a0c" stroke="#334155" stroke-width="1"/>
+                    <path d="M17 49 34 22h8l17 27H48l-4-7H31l-4 7zm19-14h4l-2-4z" fill="url(#forgeLogo)"/>
+                    <path d="M48 22h8v20h10v7H48z" fill="url(#forgeLogo)"/>
+                    <text x="40" y="61" text-anchor="middle" fill="#e2e8f0" font-size="7" font-weight="700" letter-spacing="1">AL FORGE</text>
+                </svg>
+                <div class="leading-tight">
+                    <div class="text-lg sm:text-xl font-bold tracking-tight text-slate-100">alforge3dstudio</div>
+                    <div class="mt-1 text-[10px] sm:text-xs font-medium tracking-wide text-orange-300">AL FORGE | 3D STUDIO</div>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-4 text-sm text-slate-300">
+                <a href="#catalogo" class="hover:text-cyan-400">Catálogo</a>
+                <a href="#visor3d" class="hover:text-cyan-400">Entorno 3D</a>
+                <a href="#foro" class="hover:text-cyan-400">Foro</a>
+                <a id="adminNavLink" href="#adminPanel" class="hidden hover:text-amber-400 font-semibold text-amber-500">⚙️ Panel Admin</a>
+            </nav>
+        </div>
+        <div class="flex items-center space-x-3">
+            <div id="userInfoDisplay" class="text-xs text-slate-400 hidden sm:block">Invitado</div>
+            <button onclick="toggleModal('modalCarrito')" class="bg-slate-700 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-600 relative">
+                🛒 Carrito <span id="cartCount" class="bg-cyan-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-full text-xs">0</span>
+            </button>
+            <button id="loginButton" onclick="toggleModal('modalLogin')" class="bg-cyan-500 text-slate-950 font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-cyan-400">Ingresar</button>
+            <button id="logoutButton" onclick="cerrarSesion()" class="hidden bg-slate-700 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-600">Cerrar sesión</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-4 space-y-8">
+
+        <div id="appStatus" class="hidden rounded-xl border p-4 text-sm" role="status" aria-live="polite"></div>
+
+        <!-- Panel privado: solo aparece tras comprobar el rol en Supabase -->
+        <section id="adminPanel" class="hidden bg-slate-800/90 border-2 border-amber-500/50 p-6 rounded-2xl space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-4">
+                <h2 class="text-xl font-bold text-amber-400">⚙️ Panel de Control del Administrador</h2>
+                <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full font-semibold">Administrador</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-sm text-cyan-400">Cargar producto</h3>
+                    <form id="productForm" class="space-y-2 text-xs">
+                        <input required type="text" id="adminProdNombre" placeholder="Nombre del producto" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input required min="0" step="0.01" type="number" id="adminProdPrecio" placeholder="Precio ($)" class="bg-slate-800 border border-slate-700 p-2 rounded">
+                            <select id="adminProdCat" class="bg-slate-800 border border-slate-700 p-2 rounded">
+                                <option value="Filamentos">Filamentos</option>
+                                <option value="Repuestos">Repuestos</option>
+                                <option value="Accesorios">Accesorios</option>
+                            </select>
+                        </div>
+                        <textarea id="adminProdDesc" placeholder="Descripción del producto..." class="w-full bg-slate-800 border border-slate-700 p-2 rounded"></textarea>
+                        <label class="block font-semibold">Imagen del producto</label>
+                        <input required type="file" id="adminProdImagen" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="adminProdMayorista">
+                            <label for="adminProdMayorista">Permite ventas por mayor</label>
+                        </div>
+                        <div id="wholesalePriceField" class="hidden">
+                            <label for="adminProdPrecioMayorista" class="block mb-1">Precio mayorista manual ($)</label>
+                            <input min="0" step="0.01" type="number" id="adminProdPrecioMayorista" placeholder="Precio por unidad al por mayor" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
+                            <label for="adminProdCantidadMayorista" class="block mt-2 mb-1">Cantidad mínima para precio mayorista</label>
+                            <input min="2" step="1" value="5" type="number" id="adminProdCantidadMayorista" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-800/50 p-2 rounded border border-slate-700">
+                            <input type="checkbox" id="adminProdOfertaChk">
+                            <label for="adminProdOfertaChk" class="text-amber-400 font-semibold">¿Activar oferta?</label>
+                            <input min="0" step="0.01" type="number" id="adminProdPrecioOferta" placeholder="Precio de oferta ($)" class="bg-slate-800 border border-slate-700 p-1 rounded w-36">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded">Guardar producto</button>
+                    </form>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <h3 class="font-bold text-sm text-cyan-400">Usuarios por autorizar</h3>
+                        <div id="pendingUsersList" class="text-xs space-y-2"></div>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <h3 class="font-bold text-sm text-emerald-400">Usuarios aceptados</h3>
+                        <div id="approvedUsersList" class="text-xs space-y-2"></div>
+                    </div>
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <h3 class="font-bold text-sm text-red-400">Usuarios rechazados</h3>
+                        <div id="rejectedUsersList" class="text-xs space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-sm text-cyan-400">Pedidos por revisar</h3>
+                    <div id="pendingOrdersList" class="space-y-3 text-xs"></div>
+                </div>
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <h3 class="font-bold text-sm text-amber-400">Pendientes de entrega</h3>
+                        <label class="text-xs text-slate-400">Límite de entrega:
+                            <select id="deliveryFilter" class="bg-slate-800 border border-slate-700 rounded p-1">
+                                <option value="all">Todos</option>
+                                <option value="overdue">Vencidos</option>
+                                <option value="24">Próximas 24 h</option>
+                                <option value="72">Próximas 72 h</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="acceptedOrdersList" class="space-y-3 text-xs"></div>
+                </div>
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-sm text-red-400">Pedidos rechazados</h3>
+                    <div id="rejectedOrdersList" class="space-y-3 text-xs"></div>
+                </div>
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <h3 class="font-bold text-sm text-emerald-400">Pedidos entregados</h3>
+                    <div id="deliveredOrdersList" class="space-y-3 text-xs"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="myOrdersSection" class="hidden bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-4">
+            <h2 class="text-xl font-bold">Mis pedidos y mensajes</h2>
+            <div id="myOrdersList" class="space-y-3 text-sm"></div>
+        </section>
+
+        <!-- Visor 3D Interactivo -->
+        <section id="visor3d" class="bg-gradient-to-b from-slate-800 to-slate-850 p-6 rounded-2xl border border-slate-700 shadow-xl text-center">
+            <h1 class="text-2xl md:text-3xl font-bold mb-2">Explorador de Insumos en 3D</h1>
+            <p class="text-slate-400 text-sm mb-6">Visualiza los modelos antes de realizar tu compra.</p>
+            <div class="w-full h-64 bg-slate-950 rounded-xl flex flex-col items-center justify-center border border-dashed border-slate-700 relative overflow-hidden">
+                <div class="absolute inset-0 flex items-center justify-center opacity-20">
+                    <div class="w-40 h-40 border-4 border-cyan-400 rotate-45 animate-pulse"></div>
+                </div>
+                <span class="text-cyan-400 font-semibold text-lg z-10">🎮 Lienzo 3D Activo</span>
+            </div>
+        </section>
+
+        <!-- Filtros y Búsqueda -->
+        <section class="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+            <input type="text" id="inputBusqueda" oninput="filtrarProductos()" placeholder="Buscar insumos por nombre o descripción..." class="w-full md:w-1/3 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-cyan-400">
+            <div class="flex gap-2 w-full md:w-auto">
+                <select id="selectCategoria" onchange="filtrarProductos()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+                    <option value="todos">Todas las Categorías</option>
+                    <option value="Filamentos">Filamentos</option>
+                    <option value="Repuestos">Repuestos</option>
+                    <option value="Accesorios">Accesorios</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Catálogo de Productos -->
+        <section id="catalogo">
+            <h2 class="text-xl font-bold mb-4">Catálogo de Productos</h2>
+            <div id="contenedorProductos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Producto 1 -->
+                <div class="producto-card bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col justify-between" data-nombre="Filamento PLA Premium 1kg" data-categoria="Filamentos">
+                    <div>
+                        <div class="h-40 bg-slate-900 flex items-center justify-center text-slate-600 font-bold">Vista Previa 3D</div>
+                        <div class="p-4 space-y-2">
+                            <span class="text-xs bg-cyan-500/10 text-cyan-400 font-semibold px-2 py-0.5 rounded">Filamentos</span>
+                            <h3 class="font-bold text-lg">Filamento PLA Premium 1kg</h3>
+                            <p class="text-xs text-slate-400 line-clamp-2">Alta calidad de impresión y colores vibrantes.</p>
+                            <div class="text-xs text-emerald-400 font-semibold">Venta mayorista disponible (> 5 u.)</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-500 line-through">$18.000</span>
+                            <div class="text-lg font-bold text-cyan-400">$15.500 <span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">OFERTA</span></div>
+                        </div>
+                        <button onclick="agregarAlCarrito(null, 'Filamento PLA Premium', 15500)" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button>
+                    </div>
+                </div>
+
+                <!-- Producto 2 -->
+                <div class="producto-card bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col justify-between" data-nombre="Hotend V6 All Metal" data-categoria="Repuestos">
+                    <div>
+                        <div class="h-40 bg-slate-900 flex items-center justify-center text-slate-600 font-bold">Vista Previa 3D</div>
+                        <div class="p-4 space-y-2">
+                            <span class="text-xs bg-blue-500/10 text-blue-400 font-semibold px-2 py-0.5 rounded">Repuestos</span>
+                            <h3 class="font-bold text-lg">Hotend V6 All Metal</h3>
+                            <p class="text-xs text-slate-400 line-clamp-2">Ideal para altas temperaturas.</p>
+                            <div class="text-xs text-slate-500">Venta mayorista no habilitada</div>
+                        </div>
+                    </div>
+                    <div class="p-4 pt-0 flex items-center justify-between">
+                        <div>
+                            <div class="text-lg font-bold text-white">$22.000</div>
+                        </div>
+                        <button onclick="agregarAlCarrito(null, 'Hotend V6 All Metal', 22000)" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Foro y Comunidad con Calificación de Estrellas y Foto Opcional -->
+        <section id="foro" class="bg-slate-800 border border-slate-700 p-6 rounded-2xl space-y-6">
+            <h2 class="text-xl font-bold">Foro de Clientes & Reseñas</h2>
+            
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                <h3 class="text-sm font-semibold text-cyan-400">Deja tu opinión (Publicando como: <span id="nombreForoUsuario" class="text-white font-bold">Invitado</span>)</h3>
+                <textarea id="textoComentario" placeholder="Escribe tu comentario..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-400"></textarea>
+                
+                <!-- Sistema de estrellas seleccionable -->
+                <div class="flex items-center space-x-2 text-sm">
+                    <span class="text-slate-400">Tu calificación:</span>
+                    <div id="starContainer" class="flex space-x-1 cursor-pointer text-2xl text-slate-600">
+                        <span onclick="seleccionarEstrellas(1)" class="star hover:text-amber-400">★</span>
+                        <span onclick="seleccionarEstrellas(2)" class="star hover:text-amber-400">★</span>
+                        <span onclick="seleccionarEstrellas(3)" class="star hover:text-amber-400">★</span>
+                        <span onclick="seleccionarEstrellas(4)" class="star hover:text-amber-400">★</span>
+                        <span onclick="seleccionarEstrellas(5)" class="star hover:text-amber-400">★</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+                    <div class="w-full sm:w-auto">
+                        <label class="text-xs text-slate-400 block mb-1">Imagen opcional:</label>
+                        <input type="file" id="fotoComentario" class="text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700">
+                    </div>
+                    <button onclick="publicarComentario()" class="bg-cyan-500 text-slate-950 font-bold px-5 py-2 rounded-lg text-sm hover:bg-cyan-400">Publicar Comentario</button>
+                </div>
+            </div>
+
+            <!-- Lista de comentarios -->
+            <div id="listaComentarios" class="space-y-4">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-sm text-cyan-300">CarlosMaker</span>
+                        <span class="text-amber-400 text-sm">★★★★★</span>
+                    </div>
+                    <p class="text-xs text-slate-300">Excelente calidad el filamento, rinde genial.</p>
+                    <span class="text-[10px] text-slate-500">Publicado sin foto</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Carrito / Checkout -->
+    <div id="modalCarrito" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-md rounded-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg">Tu Carrito de Compras</h3>
+                <button onclick="toggleModal('modalCarrito')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div id="cartItemsList" class="space-y-2 text-sm text-slate-300 max-h-48 overflow-y-auto">
+                <p class="text-slate-500 italic">No hay productos seleccionados.</p>
+            </div>
+            <div id="cartStatus" class="hidden rounded-lg border p-3 text-xs" role="status" aria-live="polite"></div>
+            <div class="border-t border-slate-700 pt-3 space-y-3">
+                <div class="flex justify-between font-bold">
+                    <span>Total:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <div id="paymentSection" class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2 text-xs">
+                    <p class="font-semibold text-cyan-400">Datos para transferencia:</p>
+                    <p>Alias: <span class="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">CUBESTORE.3D.MP</span></p>
+                    <label class="block font-semibold mt-2">Subir comprobante de pago (captura):</label>
+                    <input type="file" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                </div>
+                <button onclick="solicitarPedido()" class="w-full bg-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm hover:bg-cyan-400">Solicitar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Login -->
+    <div id="modalLogin" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-2xl p-6 space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-lg">Ingreso / Registro Rápido</h3>
+                <button onclick="toggleModal('modalLogin')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <p id="authDescription" class="text-xs text-slate-400">Ingresa con tu correo y contraseña o crea una cuenta. Las cuentas nuevas quedan pendientes de aprobación.</p>
+            <div id="authStatus" class="hidden rounded-lg border p-3 text-xs" role="status" aria-live="polite"></div>
+            <div class="space-y-3">
+                <div id="authNameField" class="hidden">
+                    <label class="block text-xs font-semibold mb-1" for="inputUserName">Nombre</label>
+                    <input type="text" id="inputUserName" autocomplete="name" placeholder="Tu nombre" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1" for="inputUserLogin">Correo electrónico</label>
+                    <input type="email" id="inputUserLogin" autocomplete="email" required placeholder="tu@correo.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold mb-1" for="inputUserPassword">Contraseña</label>
+                    <input type="password" id="inputUserPassword" autocomplete="current-password" minlength="8" required placeholder="Mínimo 8 caracteres" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-400">
+                </div>
+                <button id="authSubmitButton" onclick="realizarLogin()" class="w-full bg-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm hover:bg-cyan-400">Ingresar</button>
+                <button id="authModeButton" onclick="alternarModoRegistro()" class="w-full text-cyan-300 text-xs hover:text-cyan-200">¿No tienes cuenta? Solicita acceso</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Lógica -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://qqdkxkvxintudqscucgq.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_sRwp6xx37boKubOnnk9huA_2OchzMsw";
+        const PRODUCT_IMAGE_BUCKET = "product-images";
+        let supabaseClient = null;
+        let usuarioActual = "Invitado";
+        let perfilActual = null;
+        let modoRegistro = false;
+        let calificacionSeleccionada = 5;
+        let carrito = [];
+        let pedidosAdmin = [];
+
+        function toggleModal(modalId) {
+            document.getElementById(modalId).classList.toggle('hidden');
+        }
+
+        function mostrarEstado(mensaje, tipo = "info") {
+            const estado = document.getElementById('appStatus');
+            const estilos = {
+                info: "bg-cyan-950 border-cyan-700 text-cyan-100",
+                success: "bg-emerald-950 border-emerald-700 text-emerald-100",
+                error: "bg-red-950 border-red-700 text-red-100"
+            };
+            estado.className = `rounded-xl border p-4 text-sm ${estilos[tipo] || estilos.info}`;
+            estado.textContent = mensaje;
+        }
+
+        function ocultarEstado() {
+            document.getElementById('appStatus').classList.add('hidden');
+        }
+
+        function mostrarEstadoLogin(mensaje, tipo = "error") {
+            const estado = document.getElementById('authStatus');
+            estado.className = `rounded-lg border p-3 text-xs ${tipo === 'success' ? 'bg-emerald-950 border-emerald-700 text-emerald-100' : 'bg-red-950 border-red-700 text-red-100'}`;
+            estado.textContent = mensaje;
+        }
+
+        function mostrarEstadoCarrito(mensaje, tipo = "error") {
+            const estado = document.getElementById('cartStatus');
+            estado.className = `rounded-lg border p-3 text-xs ${tipo === 'success' ? 'bg-emerald-950 border-emerald-700 text-emerald-100' : 'bg-red-950 border-red-700 text-red-100'}`;
+            estado.textContent = mensaje;
+        }
+
+        function escaparHtml(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[caracter]);
+        }
+
+        function formatoPrecio(valor) {
+            return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }).format(Number(valor) || 0);
+        }
+
+        function fechaLegible(valor) {
+            if (!valor) return "Sin fecha";
+            return new Date(valor).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        function inicializarAplicacion() {
+            const configurado = !SUPABASE_URL.includes("TU-PROYECTO")
+                && !SUPABASE_ANON_KEY.includes("TU_CLAVE_PUBLICA")
+                && window.supabase?.createClient;
+            if (!configurado) {
+                mostrarEstado("Configura SUPABASE_URL y SUPABASE_ANON_KEY en index.html y ejecuta supabase-setup.sql para activar el inicio de sesión, el panel privado y la persistencia.", "info");
+                return;
+            }
+
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            document.getElementById('productForm').addEventListener('submit', guardarProducto);
+            document.getElementById('adminProdMayorista').addEventListener('change', evento => {
+                document.getElementById('wholesalePriceField').classList.toggle('hidden', !evento.target.checked);
+            });
+            document.getElementById('deliveryFilter').addEventListener('change', renderPedidosAdmin);
+            document.getElementById('adminPanel').addEventListener('click', gestionarAccionAdmin);
+            document.getElementById('contenedorProductos').addEventListener('click', evento => {
+                const boton = evento.target.closest('button[data-add-product]');
+                if (boton) agregarAlCarrito(boton.dataset.id, boton.dataset.name, Number(boton.dataset.price));
+            });
+            iniciarSesionExistente();
+        }
+
+        async function iniciarSesionExistente() {
+            try {
+                const { data, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
+                if (data.session) await cargarPerfil(data.session.user);
+                else ocultarEstado();
+                await cargarProductos();
+            } catch (error) {
+                mostrarEstado(`No se pudo iniciar la aplicación: ${error.message}`, "error");
+            }
+        }
+
+        async function cargarPerfil(usuario) {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('id, email, full_name, access_status, is_admin')
+                .eq('id', usuario.id)
+                .single();
+            if (error) throw error;
+
+            perfilActual = data;
+            usuarioActual = data.full_name || data.email || "Usuario";
+            document.getElementById('userInfoDisplay').textContent = `Usuario: ${usuarioActual}`;
+            document.getElementById('nombreForoUsuario').textContent = usuarioActual;
+            document.getElementById('loginButton').classList.add('hidden');
+            document.getElementById('logoutButton').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.toggle('hidden', !data.is_admin);
+            document.getElementById('adminNavLink').classList.toggle('hidden', !data.is_admin);
+
+            const autorizado = data.access_status === 'approved';
+            document.getElementById('myOrdersSection').classList.toggle('hidden', !autorizado || data.is_admin);
+            if (autorizado && !data.is_admin) await cargarMisPedidos();
+
+            if (data.access_status === 'pending') {
+                mostrarEstado("Tu cuenta fue creada y está pendiente de autorización del administrador.", "info");
+            } else if (data.access_status === 'rejected') {
+                mostrarEstado("Tu solicitud de acceso fue rechazada. Comunícate con el administrador si necesitas más información.", "error");
+            } else if (data.is_admin) {
+                ocultarEstado();
+                await cargarDatosAdmin();
+            } else {
+                ocultarEstado();
+            }
+        }
+
+        async function realizarLogin() {
+            if (!supabaseClient) {
+                mostrarEstadoLogin("Primero configura la conexión con Supabase siguiendo supabase-setup.sql.");
+                return;
+            }
+            const email = document.getElementById('inputUserLogin').value.trim();
+            const password = document.getElementById('inputUserPassword').value;
+            const nombre = document.getElementById('inputUserName').value.trim();
+            if (!email || !password || password.length < 8 || (modoRegistro && !nombre)) {
+                mostrarEstadoLogin("Completa los campos requeridos. La contraseña debe tener al menos 8 caracteres.");
+                return;
+            }
+
+            try {
+                if (modoRegistro) {
+                    const { data, error } = await supabaseClient.auth.signUp({
+                        email,
+                        password,
+                        options: { data: { full_name: nombre } }
+                    });
+                    if (error) throw error;
+                    if (data.session) {
+                        await cargarPerfil(data.user);
+                        toggleModal('modalLogin');
+                    } else {
+                        mostrarEstadoLogin("Solicitud creada. Revisa tu correo para confirmar la cuenta y luego inicia sesión; el administrador deberá aprobar el acceso.", "success");
+                    }
+                } else {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    await cargarPerfil(data.user);
+                    toggleModal('modalLogin');
+                }
+            } catch (error) {
+                mostrarEstadoLogin(`No se pudo completar el acceso: ${error.message}`);
+            }
+        }
+
+        function alternarModoRegistro() {
+            modoRegistro = !modoRegistro;
+            document.getElementById('authNameField').classList.toggle('hidden', !modoRegistro);
+            document.getElementById('authDescription').textContent = modoRegistro
+                ? "Crea tu cuenta con correo y contraseña. El administrador debe aprobar el acceso antes de comprar."
+                : "Ingresa con tu correo y contraseña o crea una cuenta. Las cuentas nuevas quedan pendientes de aprobación.";
+            document.getElementById('authSubmitButton').textContent = modoRegistro ? "Crear cuenta y solicitar acceso" : "Ingresar";
+            document.getElementById('authModeButton').textContent = modoRegistro ? "¿Ya tienes cuenta? Inicia sesión" : "¿No tienes cuenta? Solicita acceso";
+            document.getElementById('inputUserPassword').autocomplete = modoRegistro ? "new-password" : "current-password";
+            document.getElementById('authStatus').classList.add('hidden');
+        }
+
+        async function cerrarSesion() {
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+                perfilActual = null;
+                usuarioActual = "Invitado";
+                document.getElementById('userInfoDisplay').textContent = "Invitado";
+                document.getElementById('nombreForoUsuario').textContent = "Invitado";
+                document.getElementById('adminPanel').classList.add('hidden');
+                document.getElementById('adminNavLink').classList.add('hidden');
+                document.getElementById('myOrdersSection').classList.add('hidden');
+                document.getElementById('logoutButton').classList.add('hidden');
+                document.getElementById('loginButton').classList.remove('hidden');
+                mostrarEstado("Sesión cerrada.", "success");
+            } catch (error) {
+                mostrarEstado(`No se pudo cerrar la sesión: ${error.message}`, "error");
+            }
+        }
+
+        async function cargarProductos() {
+            const { data, error } = await supabaseClient
+                .from('products')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            const contenedor = document.getElementById('contenedorProductos');
+            if (!data.length) {
+                contenedor.innerHTML = '<p class="text-sm text-slate-400">Todavía no hay productos publicados.</p>';
+                return;
+            }
+            contenedor.innerHTML = data.map(producto => {
+                const precio = producto.on_sale && producto.sale_price != null ? producto.sale_price : producto.price;
+                const imagen = producto.image_url
+                    ? `<img src="${escaparHtml(producto.image_url)}" alt="${escaparHtml(producto.name)}" class="h-40 w-full object-cover">`
+                    : '<div class="h-40 bg-slate-900 flex items-center justify-center text-slate-600 font-bold">Sin imagen</div>';
+                return `
+                    <article class="producto-card bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col justify-between" data-nombre="${escaparHtml(producto.name.toLowerCase())}" data-categoria="${escaparHtml(producto.category)}">
+                        <div>
+                            ${imagen}
+                            <div class="p-4 space-y-2">
+                                <span class="text-xs bg-cyan-500/10 text-cyan-400 font-semibold px-2 py-0.5 rounded">${escaparHtml(producto.category)}</span>
+                                <h3 class="font-bold text-lg">${escaparHtml(producto.name)}</h3>
+                                <p class="text-xs text-slate-400">${escaparHtml(producto.description || '')}</p>
+                                <div class="text-xs ${producto.wholesale_enabled ? 'text-emerald-400' : 'text-slate-500'}">${producto.wholesale_enabled ? `Mayorista desde ${producto.wholesale_min_quantity} unidades: ${formatoPrecio(producto.wholesale_price)} c/u` : 'Venta mayorista no habilitada'}</div>
+                            </div>
+                        </div>
+                        <div class="p-4 pt-0 flex items-center justify-between">
+                            <div>
+                                ${producto.on_sale ? `<span class="text-xs text-slate-500 line-through">${formatoPrecio(producto.price)}</span>` : ''}
+                                <div class="text-lg font-bold text-cyan-400">${formatoPrecio(precio)} ${producto.on_sale ? '<span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">OFERTA</span>' : ''}</div>
+                            </div>
+                            <button data-add-product data-id="${producto.id}" data-name="${escaparHtml(producto.name)}" data-price="${Number(precio)}" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button>
+                        </div>
+                    </article>`;
+            }).join('');
+            filtrarProductos();
+        }
+
+        function agregarAlCarrito(id, producto, precio) {
+            const existente = carrito.find(item => item.product_id === id);
+            if (existente) existente.quantity += 1;
+            else carrito.push({ product_id: id || null, name: producto, price: Number(precio), quantity: 1 });
+            renderCarrito();
+        }
+
+        function renderCarrito() {
+            const cantidad = carrito.reduce((total, item) => total + item.quantity, 0);
+            const total = carrito.reduce((suma, item) => suma + item.price * item.quantity, 0);
+            document.getElementById('cartCount').textContent = cantidad;
+            document.getElementById('cartTotal').textContent = formatoPrecio(total);
+            document.getElementById('cartItemsList').innerHTML = carrito.length
+                ? carrito.map(item => `<div class="flex justify-between gap-3"><span>${escaparHtml(item.name)} × ${item.quantity}</span><span>${formatoPrecio(item.price * item.quantity)}</span></div>`).join('')
+                : '<p class="text-slate-500 italic">No hay productos seleccionados.</p>';
+        }
+
+        async function solicitarPedido() {
+            document.getElementById('cartStatus').classList.add('hidden');
+            if (!supabaseClient) {
+                mostrarEstadoCarrito("Configura Supabase para registrar pedidos.");
+                return;
+            }
+            if (!perfilActual) {
+                document.getElementById('modalCarrito').classList.add('hidden');
+                document.getElementById('modalLogin').classList.remove('hidden');
+                mostrarEstadoLogin("Inicia sesión con una cuenta autorizada para realizar un pedido.");
+                return;
+            }
+            if (perfilActual.access_status !== 'approved') {
+                mostrarEstadoCarrito("Tu cuenta todavía no está autorizada para realizar pedidos.");
+                return;
+            }
+            if (!carrito.length || carrito.some(item => !item.product_id)) {
+                mostrarEstadoCarrito("Agrega productos publicados desde Supabase antes de enviar el pedido.");
+                return;
+            }
+            try {
+                const { error } = await supabaseClient.rpc('create_order', {
+                    order_items: carrito.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+                });
+                if (error) throw error;
+                carrito = [];
+                renderCarrito();
+                toggleModal('modalCarrito');
+                await cargarMisPedidos();
+                mostrarEstado("Pedido enviado al administrador. Podrás consultar aquí su estado y los mensajes sobre la entrega.", "success");
+            } catch (error) {
+                mostrarEstadoCarrito(`No se pudo enviar el pedido: ${error.message}`);
+            }
+        }
+
+        async function guardarProducto(evento) {
+            evento.preventDefault();
+            if (!perfilActual?.is_admin) return;
+            const archivo = document.getElementById('adminProdImagen').files[0];
+            const mayorista = document.getElementById('adminProdMayorista').checked;
+            const oferta = document.getElementById('adminProdOfertaChk').checked;
+            const precioMayorista = Number(document.getElementById('adminProdPrecioMayorista').value);
+            const precioOferta = Number(document.getElementById('adminProdPrecioOferta').value);
+            const precio = Number(document.getElementById('adminProdPrecio').value);
+            if (!archivo || (mayorista && (document.getElementById('adminProdPrecioMayorista').value === '' || !Number.isFinite(precioMayorista) || precioMayorista < 0)) || (oferta && (document.getElementById('adminProdPrecioOferta').value === '' || !Number.isFinite(precioOferta) || precioOferta < 0))) {
+                mostrarEstado("Selecciona una imagen y completa los precios requeridos para mayorista u oferta.", "error");
+                return;
+            }
+            try {
+                const extension = archivo.name.split('.').pop().replace(/[^a-zA-Z0-9]/g, '') || 'image';
+                const nombreArchivo = window.crypto.randomUUID
+                    ? window.crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                const ruta = `${perfilActual.id}/${nombreArchivo}.${extension}`;
+                const { error: uploadError } = await supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).upload(ruta, archivo, { upsert: false });
+                if (uploadError) throw uploadError;
+                const { data: imagenPublica } = supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(ruta);
+                const producto = {
+                    name: document.getElementById('adminProdNombre').value.trim(),
+                    price: precio,
+                    category: document.getElementById('adminProdCat').value,
+                    description: document.getElementById('adminProdDesc').value.trim(),
+                    image_url: imagenPublica.publicUrl,
+                    wholesale_enabled: mayorista,
+                    wholesale_price: mayorista ? precioMayorista : null,
+                    wholesale_min_quantity: mayorista ? Number(document.getElementById('adminProdCantidadMayorista').value) : null,
+                    on_sale: oferta,
+                    sale_price: oferta ? precioOferta : null
+                };
+                const { error } = await supabaseClient.from('products').insert(producto);
+                if (error) throw error;
+                evento.target.reset();
+                document.getElementById('wholesalePriceField').classList.add('hidden');
+                await cargarProductos();
+                mostrarEstado("Producto guardado y publicado.", "success");
+            } catch (error) {
+                mostrarEstado(`No se pudo guardar el producto: ${error.message}`, "error");
+            }
+        }
+
+        async function cargarDatosAdmin() {
+            if (!perfilActual?.is_admin) return;
+            try {
+                const { data: usuarios, error: errorUsuarios } = await supabaseClient
+                    .from('profiles').select('id, email, full_name, access_status, is_admin, created_at').order('created_at', { ascending: true });
+                if (errorUsuarios) throw errorUsuarios;
+                const { data: pedidos, error: errorPedidos } = await supabaseClient
+                    .from('orders').select('*').order('created_at', { ascending: false });
+                if (errorPedidos) throw errorPedidos;
+                pedidosAdmin = pedidos;
+                renderUsuarios(usuarios);
+                renderPedidosAdmin();
+            } catch (error) {
+                mostrarEstado(`No se pudieron cargar los datos de administración: ${error.message}`, "error");
+            }
+        }
+
+        function renderUsuarios(usuarios) {
+            const secciones = {
+                pending: document.getElementById('pendingUsersList'),
+                approved: document.getElementById('approvedUsersList'),
+                rejected: document.getElementById('rejectedUsersList')
+            };
+            Object.values(secciones).forEach(seccion => seccion.innerHTML = '');
+            usuarios.filter(usuario => !usuario.is_admin).forEach(usuario => {
+                const seccion = secciones[usuario.access_status];
+                if (!seccion) return;
+                const acciones = usuario.access_status === 'pending'
+                    ? `<div class="flex gap-2"><button data-user-action="approved" data-id="${usuario.id}" class="bg-emerald-600 px-2 py-1 rounded text-white font-bold">Aceptar</button><button data-user-action="rejected" data-id="${usuario.id}" class="bg-red-600 px-2 py-1 rounded text-white font-bold">Rechazar</button></div>`
+                    : '';
+                seccion.insertAdjacentHTML('beforeend', `<div class="flex flex-wrap justify-between items-center gap-2 bg-slate-800 p-2 rounded"><span>${escaparHtml(usuario.full_name || usuario.email)} (${escaparHtml(usuario.email)})</span>${acciones}</div>`);
+            });
+            Object.entries(secciones).forEach(([estado, seccion]) => {
+                if (!seccion.innerHTML) seccion.innerHTML = `<p class="text-slate-500">No hay usuarios ${estado === 'pending' ? 'pendientes' : estado === 'approved' ? 'aceptados' : 'rechazados'}.</p>`;
+            });
+        }
+
+        function renderTarjetaPedido(pedido, acciones) {
+            const productos = (pedido.items || []).map(item =>
+                `<li>${escaparHtml(item.product_name)} × ${Number(item.quantity)} — ${formatoPrecio(item.subtotal)}</li>`
+            ).join('');
+            return `<article class="bg-slate-800 p-3 rounded space-y-2">
+                <p><strong>Cliente:</strong> ${escaparHtml(pedido.customer_name)} (${escaparHtml(pedido.customer_email)})</p>
+                <ul class="list-disc pl-5 text-slate-300">${productos}</ul>
+                <p><strong>Total:</strong> ${formatoPrecio(pedido.total)} · <span class="text-slate-400">${fechaLegible(pedido.created_at)}</span></p>
+                ${pedido.delivery_deadline ? `<p><strong>Plazo de entrega:</strong> ${fechaLegible(pedido.delivery_deadline)}</p>` : ''}
+                ${pedido.rejection_reason ? `<p class="text-red-300"><strong>Motivo:</strong> ${escaparHtml(pedido.rejection_reason)}</p>` : ''}
+                ${acciones}
+            </article>`;
+        }
+
+        function renderPedidosAdmin() {
+            const listas = {
+                pending: document.getElementById('pendingOrdersList'),
+                accepted: document.getElementById('acceptedOrdersList'),
+                rejected: document.getElementById('rejectedOrdersList'),
+                delivered: document.getElementById('deliveredOrdersList')
+            };
+            const filtro = document.getElementById('deliveryFilter').value;
+            const ahora = Date.now();
+            const limite = filtro === '24' ? 24 * 60 * 60 * 1000 : filtro === '72' ? 72 * 60 * 60 * 1000 : null;
+            Object.values(listas).forEach(lista => lista.innerHTML = '');
+            pedidosAdmin.forEach(pedido => {
+                let acciones = '';
+                if (pedido.status === 'pending') {
+                    acciones = `<label class="block">Plazo de entrega<input type="datetime-local" data-deadline-for="${pedido.id}" class="mt-1 w-full bg-slate-900 border border-slate-700 p-2 rounded"></label>
+                        <div class="flex flex-wrap gap-2"><button data-order-action="accepted" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Aceptar pedido</button><button data-order-action="rejected" data-id="${pedido.id}" class="bg-red-600 text-white font-bold px-3 py-1 rounded">Rechazar pedido</button></div>
+                        <textarea data-reason-for="${pedido.id}" placeholder="Motivo obligatorio si se rechaza" class="w-full bg-slate-900 border border-slate-700 p-2 rounded"></textarea>`;
+                } else if (pedido.status === 'accepted') {
+                    acciones = `<button data-order-action="delivered" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Marcar como entregado</button>`;
+                }
+                if (pedido.status === 'accepted' && filtro !== 'all') {
+                    const plazo = new Date(pedido.delivery_deadline).getTime();
+                    if (filtro === 'overdue' && plazo >= ahora) return;
+                    if (limite !== null && (plazo < ahora || plazo > ahora + limite)) return;
+                }
+                listas[pedido.status]?.insertAdjacentHTML('beforeend', renderTarjetaPedido(pedido, acciones));
+            });
+            Object.entries(listas).forEach(([estado, lista]) => {
+                if (!lista.innerHTML) lista.innerHTML = `<p class="text-slate-500">No hay pedidos ${estado === 'pending' ? 'por revisar' : estado === 'accepted' ? 'pendientes de entrega para este filtro' : estado === 'rejected' ? 'rechazados' : 'entregados'}.</p>`;
+            });
+        }
+
+        async function gestionarAccionAdmin(evento) {
+            const boton = evento.target.closest('button[data-user-action], button[data-order-action]');
+            if (!boton || !perfilActual?.is_admin) return;
+            try {
+                if (boton.dataset.userAction) {
+                    const { error } = await supabaseClient.from('profiles')
+                        .update({ access_status: boton.dataset.userAction }).eq('id', boton.dataset.id);
+                    if (error) throw error;
+                } else {
+                    const id = boton.dataset.id;
+                    const estado = boton.dataset.orderAction;
+                    const cambios = { status: estado };
+                    if (estado === 'accepted') {
+                        const valorPlazo = document.querySelector(`[data-deadline-for="${id}"]`).value;
+                        if (!valorPlazo || new Date(valorPlazo).getTime() <= Date.now()) {
+                            mostrarEstado("Indica un plazo de entrega futuro antes de aceptar el pedido.", "error");
+                            return;
+                        }
+                        cambios.delivery_deadline = new Date(valorPlazo).toISOString();
+                        cambios.rejection_reason = null;
+                    } else if (estado === 'rejected') {
+                        const motivo = document.querySelector(`[data-reason-for="${id}"]`).value.trim();
+                        if (!motivo) {
+                            mostrarEstado("Escribe el motivo obligatorio para rechazar el pedido.", "error");
+                            return;
+                        }
+                        cambios.rejection_reason = motivo;
+                        cambios.delivery_deadline = null;
+                    }
+                    const { error } = await supabaseClient.from('orders').update(cambios).eq('id', id);
+                    if (error) throw error;
+                }
+                await cargarDatosAdmin();
+                if (perfilActual.access_status === 'approved' && !perfilActual.is_admin) await cargarMisPedidos();
+                mostrarEstado("Cambio guardado. El cliente podrá ver el estado y el mensaje en su cuenta.", "success");
+            } catch (error) {
+                mostrarEstado(`No se pudo guardar el cambio: ${error.message}`, "error");
+            }
+        }
+
+        async function cargarMisPedidos() {
+            if (!perfilActual || perfilActual.is_admin) return;
+            const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+            if (error) {
+                mostrarEstado(`No se pudieron cargar tus pedidos: ${error.message}`, "error");
+                return;
+            }
+            const contenedor = document.getElementById('myOrdersList');
+            if (!data.length) {
+                contenedor.innerHTML = '<p class="text-slate-400">Todavía no tienes pedidos.</p>';
+                return;
+            }
+            contenedor.innerHTML = data.map(pedido => {
+                const estados = { pending: 'Pendiente de revisión', accepted: 'Pendiente de entrega', rejected: 'Rechazado', delivered: 'Entregado' };
+                const mensaje = pedido.status === 'accepted'
+                    ? `Pedido aceptado. Plazo de entrega: ${fechaLegible(pedido.delivery_deadline)}.`
+                    : pedido.status === 'rejected'
+                        ? `Pedido rechazado. Motivo: ${escaparHtml(pedido.rejection_reason)}`
+                        : pedido.status === 'delivered'
+                            ? 'El pedido figura como entregado.'
+                            : 'El pedido fue recibido y está pendiente de revisión.';
+                return `<article class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2">
+                    <p><strong>Pedido del ${fechaLegible(pedido.created_at)}</strong> · Estado: ${estados[pedido.status] || escaparHtml(pedido.status)}</p>
+                    <p class="text-cyan-200">${mensaje}</p>
+                    <ul class="list-disc pl-5 text-slate-300">${(pedido.items || []).map(item => `<li>${escaparHtml(item.product_name)} × ${Number(item.quantity)} — ${formatoPrecio(item.subtotal)}</li>`).join('')}</ul>
+                    <p class="font-bold">Total: ${formatoPrecio(pedido.total)}</p>
+                </article>`;
+            }).join('');
+        }
+
+        function filtrarProductos() {
+            const texto = document.getElementById('inputBusqueda').value.toLowerCase();
+            const categoriaSeleccionada = document.getElementById('selectCategoria').value;
+            document.querySelectorAll('.producto-card').forEach(tarjeta => {
+                const nombre = tarjeta.getAttribute('data-nombre') || '';
+                const categoria = tarjeta.getAttribute('data-categoria') || '';
+                tarjeta.style.display = nombre.includes(texto)
+                    && (categoriaSeleccionada === 'todos' || categoria === categoriaSeleccionada) ? "flex" : "none";
+            });
+        }
+
+        function seleccionarEstrellas(estrellas) {
+            calificacionSeleccionada = estrellas;
+            document.querySelectorAll('#starContainer .star').forEach((estrella, indice) => {
+                estrella.classList.toggle('text-amber-400', indice < estrellas);
+                estrella.classList.toggle('text-slate-600', indice >= estrellas);
+            });
+        }
+
+        function publicarComentario() {
+            const texto = document.getElementById('textoComentario').value.trim();
+            const inputFoto = document.getElementById('fotoComentario');
+            if (!texto) {
+                mostrarEstado("Escribe un comentario antes de publicar.", "error");
+                return;
+            }
+            const comentario = document.createElement('div');
+            comentario.className = "bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2";
+            const encabezado = document.createElement('div');
+            encabezado.className = "flex justify-between items-center";
+            const autor = document.createElement('span');
+            autor.className = "font-semibold text-sm text-cyan-300";
+            autor.textContent = usuarioActual;
+            const estrellas = document.createElement('span');
+            estrellas.className = "text-amber-400 text-sm";
+            estrellas.textContent = '★'.repeat(calificacionSeleccionada) + '☆'.repeat(5 - calificacionSeleccionada);
+            encabezado.append(autor, estrellas);
+            const cuerpo = document.createElement('p');
+            cuerpo.className = "text-xs text-slate-300";
+            cuerpo.textContent = texto;
+            const foto = document.createElement('span');
+            foto.className = "text-[10px] text-slate-500";
+            foto.textContent = inputFoto.files.length ? "Publicado con foto adjunta" : "Publicado sin foto";
+            comentario.append(encabezado, cuerpo, foto);
+            document.getElementById('listaComentarios').prepend(comentario);
+            document.getElementById('textoComentario').value = '';
+            inputFoto.value = '';
+            mostrarEstado("Comentario publicado en el foro.", "success");
+        }
+
+        inicializarAplicacion();
+    </script>
+</body>
+</html>
