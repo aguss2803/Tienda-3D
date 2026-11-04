@@ -236,6 +236,11 @@ on public.notifications for update to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
 
+drop policy if exists "Users delete own notifications" on public.notifications;
+create policy "Users delete own notifications"
+on public.notifications for delete to authenticated
+using ((select auth.uid()) = user_id);
+
 drop policy if exists "Public read reviews" on public.reviews;
 create policy "Public read reviews"
 on public.reviews for select to anon, authenticated
@@ -561,7 +566,7 @@ grant select on public.products to anon, authenticated;
 grant insert, update, delete on public.products to authenticated;
 grant select, update, delete on public.orders to authenticated;
 grant select on public.notifications to authenticated;
-grant update (read_at) on public.notifications to authenticated;
+grant update (read_at), delete on public.notifications to authenticated;
 grant select, insert, update, delete on public.reviews to authenticated;
 grant select on public.reviews to anon;
 grant select, insert on public.product_conversations to authenticated;

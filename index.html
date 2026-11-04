@@ -1776,24 +1776,39 @@
                 ? data.map(notificacion => `<article class="p-3 rounded-lg border ${notificacion.read_at ? 'border-slate-700 bg-slate-800/60' : 'border-cyan-700 bg-cyan-950/30'} space-y-1">
                     <div class="flex flex-wrap justify-between gap-2"><strong>${escaparHtml(notificacion.title)}</strong><span class="text-xs text-slate-500">${fechaLegible(notificacion.created_at)}</span></div>
                     <p class="text-sm text-slate-300">${escaparHtml(notificacion.message)}</p>
-                    ${notificacion.read_at ? '<span class="text-[10px] text-slate-500">Leída</span>' : `<button data-notification-read="${notificacion.id}" class="text-xs text-cyan-300 underline">Marcar como leída</button>`}
+                    <div class="flex flex-wrap items-center gap-3 pt-1">
+                        ${notificacion.read_at ? '<span class="text-[10px] text-slate-500">Leída</span>' : `<button data-notification-read="${notificacion.id}" class="text-xs text-cyan-300 underline">Marcar como leída</button>`}
+                        <button data-notification-delete="${notificacion.id}" class="text-xs text-red-300 underline hover:text-red-200">Borrar</button>
+                    </div>
                 </article>`).join('')
                 : '<p class="text-slate-400">Todavía no tienes notificaciones.</p>';
             return true;
         }
 
         async function gestionarNotificacion(evento) {
-            const boton = evento.target.closest('button[data-notification-read]');
-            if (!boton || !perfilActual) return;
-            const { error } = await supabaseClient.from('notifications')
-                .update({ read_at: new Date().toISOString() })
-                .eq('id', boton.dataset.notificationRead)
-                .eq('user_id', perfilActual.id);
-            if (error) {
-                mostrarEstado(`No se pudo marcar la notificación como leída: ${error.message}`, "error");
+            const botonLeer = evento.target.closest('button[data-notification-read]');
+            const botonBorrar = evento.target.closest('button[data-notification-delete]');
+            if ((!botonLeer && !botonBorrar) || !perfilActual) return;
+            if (botonBorrar && !window.confirm("¿Borrar esta notificación? Esta acción no se puede deshacer.")) return;
+
+            try {
+                const consulta = supabaseClient.from('notifications');
+                const { error } = botonBorrar
+                    ? await consulta.delete()
+                        .eq('id', botonBorrar.dataset.notificationDelete)
+                        .eq('user_id', perfilActual.id)
+                    : await consulta.update({ read_at: new Date().toISOString() })
+                        .eq('id', botonLeer.dataset.notificationRead)
+                        .eq('user_id', perfilActual.id);
+                if (error) throw error;
+                await cargarNotificaciones();
+            } catch (error) {
+                mostrarEstado(
+                    `No se pudo ${botonBorrar ? 'borrar la notificación' : 'marcar la notificación como leída'}: ${error.message}`,
+                    "error"
+                );
                 return;
             }
-            await cargarNotificaciones();
         }
 
         function renderGraficoVentas(pedidos) {
