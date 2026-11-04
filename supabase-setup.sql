@@ -54,7 +54,7 @@ create table if not exists public.products (
     price numeric(12, 2) not null check (price >= 0),
     category text not null check (category in ('Filamentos', 'Repuestos', 'Accesorios')),
     description text not null default '',
-    image_url text not null,
+    image_url text,
     model_url text,
     wholesale_enabled boolean not null default false,
     wholesale_price numeric(12, 2) check (wholesale_price is null or wholesale_price >= 0),
@@ -69,6 +69,9 @@ create table if not exists public.products (
     ),
     constraint valid_sale_price check (
         (on_sale and sale_price is not null) or (not on_sale and sale_price is null)
+    ),
+    constraint products_has_media check (
+        nullif(trim(image_url), '') is not null or nullif(trim(model_url), '') is not null
     )
 );
 
@@ -102,6 +105,11 @@ create index if not exists orders_status_deadline_idx on public.orders (status, 
 create index if not exists profiles_status_idx on public.profiles (access_status);
 
 alter table public.products add column if not exists model_url text;
+alter table public.products alter column image_url drop not null;
+alter table public.products drop constraint if exists products_has_media;
+alter table public.products add constraint products_has_media check (
+    nullif(trim(image_url), '') is not null or nullif(trim(model_url), '') is not null
+);
 alter table public.orders add column if not exists delivery_date date;
 alter table public.orders add column if not exists accepted_at timestamptz;
 alter table public.orders add column if not exists payment_proof_path text;
@@ -144,12 +152,19 @@ create index if not exists reviews_created_idx on public.reviews (created_at des
 create table if not exists public.product_conversations (
     id uuid primary key default gen_random_uuid(),
     customer_id uuid not null references public.profiles(id) on delete cascade,
-    product_id uuid not null references public.products(id) on delete restrict,
+    product_id uuid references public.products(id) on delete set null,
     product_name text not null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     unique (customer_id, product_id)
 );
+
+alter table public.product_conversations alter column product_id drop not null;
+alter table public.product_conversations
+    drop constraint if exists product_conversations_product_id_fkey;
+alter table public.product_conversations
+    add constraint product_conversations_product_id_fkey
+    foreign key (product_id) references public.products(id) on delete set null;
 
 create index if not exists product_conversations_updated_idx
     on public.product_conversations (updated_at desc);

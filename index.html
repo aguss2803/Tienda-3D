@@ -187,11 +187,11 @@
                             </select>
                         </div>
                         <textarea id="adminProdDesc" placeholder="Descripción del producto..." class="w-full bg-slate-800 border border-slate-700 p-2 rounded"></textarea>
-                        <label class="block font-semibold">Imagen del producto</label>
-                        <input required type="file" id="adminProdImagen" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                        <label for="adminProdImagen" class="block font-semibold">Imagen del producto (opcional)</label>
+                        <input type="file" id="adminProdImagen" accept="image/jpeg,image/png,image/webp,image/gif" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
                         <label for="adminProdModelo" class="block font-semibold">Modelo 3D opcional (.glb o .gltf)</label>
                         <input type="file" id="adminProdModelo" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
-                        <p class="text-[10px] text-slate-500">Los archivos .gltf deben incluir sus recursos dentro del archivo; se recomienda .glb.</p>
+                        <p class="text-[10px] text-slate-500">Sube una imagen, un modelo 3D o ambos. Los .gltf deben incluir sus recursos; se recomienda .glb.</p>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="adminProdMayorista">
                             <label for="adminProdMayorista">Permite ventas por mayor</label>
@@ -642,9 +642,11 @@
                 const boton = evento.target.closest('button[data-add-product]');
                 const botonEditar = evento.target.closest('button[data-edit-product]');
                 const botonChat = evento.target.closest('button[data-chat-product]');
+                const botonEliminar = evento.target.closest('button[data-delete-product]');
                 if (boton) agregarAlCarrito(boton.dataset.id, boton.dataset.name, Number(boton.dataset.price));
                 if (botonEditar) iniciarEdicionProducto(botonEditar.dataset.editProduct);
                 if (botonChat) abrirChatProducto(botonChat.dataset.chatProduct);
+                if (botonEliminar) eliminarProducto(botonEliminar.dataset.deleteProduct);
             });
             document.getElementById('cancelReviewEditButton').addEventListener('click', cancelarEdicionResena);
             seleccionarEstrellas(calificacionSeleccionada);
@@ -914,7 +916,8 @@
                     ? ((1 - Number(precio) / Number(producto.price)) * 100).toFixed(1)
                     : 0;
                 const botonEditar = perfilActual?.is_admin
-                    ? `<button data-edit-product="${producto.id}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Editar</button>`
+                    ? `<button data-edit-product="${producto.id}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Editar</button>
+                        <button data-delete-product="${producto.id}" class="bg-red-900/80 hover:bg-red-800 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Eliminar</button>`
                     : '';
                 const botonConsulta = perfilActual?.is_admin
                     ? ''
@@ -1426,13 +1429,17 @@
             const precio = Number(document.getElementById('adminProdPrecio').value);
             const extensionModelo = archivoModelo?.name.split('.').pop().toLowerCase();
             const estabaEditando = Boolean(productoExistente);
-            if ((!archivo && !productoExistente) || (archivoModelo && !['glb', 'gltf'].includes(extensionModelo))
+            const tipoImagenValido = !archivo || ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(archivo.type);
+            if ((!archivo && !archivoModelo && !productoExistente?.image_url && !productoExistente?.model_url)
+                || !tipoImagenValido
+                || (archivo && archivo.size > 20 * 1024 * 1024)
+                || (archivoModelo && !['glb', 'gltf'].includes(extensionModelo))
                 || (archivoModelo && archivoModelo.size > 20 * 1024 * 1024)
                 || (mayorista && (document.getElementById('adminProdPrecioMayorista').value === '' || !Number.isFinite(precioMayorista) || precioMayorista < 0))
                 || (oferta && (porcentajeOferta !== ''
                     ? !Number.isFinite(Number(porcentajeOferta)) || Number(porcentajeOferta) <= 0 || Number(porcentajeOferta) >= 100 || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio
                     : document.getElementById('adminProdPrecioOferta').value === '' || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio))) {
-                mostrarEstado("Selecciona una imagen válida, un modelo .glb/.gltf de hasta 20 MB si corresponde y completa correctamente los precios.", "error");
+                mostrarEstado("Sube una imagen JPG, PNG, WebP o GIF, un modelo .glb/.gltf o ambos. Cada archivo puede pesar hasta 20 MB; revisa también los precios.", "error");
                 return;
             }
             const archivosSubidos = [];
@@ -1486,6 +1493,68 @@
             }
         }
 
+        function obtenerRutaArchivoProducto(url) {
+            if (!url) return null;
+            try {
+                const ruta = new URL(url).pathname;
+                const prefijo = `/storage/v1/object/public/${PRODUCT_IMAGE_BUCKET}/`;
+                if (!ruta.startsWith(prefijo)) return null;
+                return decodeURIComponent(ruta.slice(prefijo.length));
+            } catch {
+                return null;
+            }
+        }
+
+        async function eliminarProducto(id) {
+            if (!perfilActual?.is_admin) return;
+            const producto = productosCache.find(item => item.id === id);
+            if (!producto) {
+                mostrarEstado("No se encontró el producto para eliminar. Actualiza el catálogo e inténtalo de nuevo.", "error");
+                return;
+            }
+            if (!window.confirm(`¿Eliminar «${producto.name}» del catálogo? Los pedidos y conversaciones existentes conservarán su historial; esta acción no se puede deshacer.`)) return;
+
+            let data;
+            try {
+                const resultado = await supabaseClient.from('products')
+                    .delete()
+                    .eq('id', id)
+                    .select('id')
+                    .maybeSingle();
+                if (resultado.error) throw resultado.error;
+                data = resultado.data;
+                if (!data) {
+                    throw new Error("No se eliminó ningún registro. Comprueba que sigues conectado como administrador.");
+                }
+            } catch (error) {
+                mostrarEstado(`No se pudo eliminar el producto: ${error.message}`, "error");
+                return;
+            }
+
+            const rutas = [...new Set([
+                obtenerRutaArchivoProducto(producto.image_url),
+                obtenerRutaArchivoProducto(producto.model_url)
+            ].filter(Boolean))];
+            let errorLimpieza = null;
+            if (rutas.length) {
+                const resultado = await supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).remove(rutas);
+                errorLimpieza = resultado.error;
+            }
+
+            try {
+                await cargarProductos();
+            } catch (error) {
+                mostrarEstado(`El producto se eliminó, pero no se pudo actualizar el catálogo: ${error.message}`, "error");
+                return;
+            }
+            mostrarEstado(
+                errorLimpieza
+                    ? `El producto se eliminó del catálogo, pero no se pudieron borrar todos sus archivos: ${errorLimpieza.message}`
+                    : "Producto eliminado del catálogo.",
+                errorLimpieza ? "error" : "success"
+            );
+        }
+
         function iniciarEdicionProducto(id) {
             if (!perfilActual?.is_admin) return;
             const producto = productosCache.find(item => item.id === id);
@@ -1495,7 +1564,6 @@
             document.getElementById('adminProdPrecio').value = producto.price;
             document.getElementById('adminProdCat').value = producto.category;
             document.getElementById('adminProdDesc').value = producto.description || '';
-            document.getElementById('adminProdImagen').required = false;
             document.getElementById('adminProdMayorista').checked = producto.wholesale_enabled;
             document.getElementById('adminProdPrecioMayorista').value = producto.wholesale_price ?? '';
             document.getElementById('adminProdCantidadMayorista').value = producto.wholesale_min_quantity ?? 5;
@@ -1515,7 +1583,6 @@
             edicionProductoId = null;
             const formulario = document.getElementById('productForm');
             formulario.reset();
-            document.getElementById('adminProdImagen').required = true;
             document.getElementById('wholesalePriceField').classList.add('hidden');
             document.querySelector('#productForm button[type="submit"]').textContent = 'Guardar producto';
             document.getElementById('cancelProductEditButton').classList.add('hidden');
