@@ -395,7 +395,7 @@ begin
 
     if tg_op = 'DELETE' then
         insert into public.notifications (user_id, order_id, title, message)
-        values (old.user_id, old.id, 'Pedido eliminado', 'El administrador eliminó este pedido.');
+        values (old.user_id, null, 'Pedido eliminado', 'El administrador eliminó este pedido.');
         return old;
     end if;
 

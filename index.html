@@ -133,8 +133,26 @@
                 <a id="adminNavLink" href="#adminPanel" class="hidden hover:text-amber-400 font-semibold text-amber-500">⚙️ Panel Admin</a>
             </nav>
         </div>
-        <div class="flex items-center space-x-3">
-            <div id="userInfoDisplay" class="text-xs text-slate-400 hidden sm:block">Invitado</div>
+        <div class="flex items-center gap-2 sm:gap-3">
+            <div id="userInfoDisplay" class="hidden max-w-36 truncate text-xs text-slate-400 sm:block">Invitado</div>
+            <div id="notificationPopover" class="relative hidden">
+                <button id="notificationToggle" type="button" aria-label="Abrir notificaciones" aria-controls="notificationPanel" aria-expanded="false" class="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-200 hover:border-cyan-500 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-500" title="Notificaciones">
+                    <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>
+                    </svg>
+                    <span id="notificationBadge" class="hidden absolute -right-1 -top-1 min-w-4 rounded-full bg-orange-500 px-1 text-center text-[10px] font-bold leading-4 text-slate-950"></span>
+                </button>
+                <section id="notificationPanel" aria-label="Bandeja de notificaciones" class="hidden absolute right-0 top-full z-[70] mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl shadow-black/50">
+                    <div class="flex items-center justify-between border-b border-slate-700 px-4 py-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-100">Notificaciones</h2>
+                            <p id="notificationUnreadCount" class="mt-0.5 text-[11px] text-cyan-300"></p>
+                        </div>
+                        <button id="notificationClose" type="button" aria-label="Cerrar notificaciones" class="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white">✕</button>
+                    </div>
+                    <div id="notificationList" class="max-h-[min(60vh,28rem)] space-y-2 overflow-y-auto p-3 text-sm"></div>
+                </section>
+            </div>
             <button onclick="toggleModal('modalCarrito')" class="bg-slate-700 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-600 relative">
                 🛒 Carrito <span id="cartCount" class="bg-cyan-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-full text-xs">0</span>
             </button>
@@ -259,41 +277,48 @@
             <div id="myOrdersList" class="space-y-3 text-sm"></div>
         </section>
 
-        <section id="notificationInbox" class="hidden bg-slate-800 border border-cyan-700/40 p-6 rounded-2xl space-y-4">
-            <h2 class="text-xl font-bold">Bandeja de notificaciones <span id="notificationUnreadCount" class="text-xs text-cyan-300"></span></h2>
-            <div id="notificationList" class="space-y-3 text-sm"></div>
-        </section>
-
-        <section id="conversationCenter" class="hidden bg-slate-800 border border-cyan-700/40 p-6 rounded-2xl space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 pb-3">
+        <div id="conversationWidget" class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3">
+            <section id="conversationCenter" aria-label="Chat de atención al cliente" class="hidden w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-700/50 bg-slate-900 shadow-2xl shadow-black/50">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-700 bg-slate-800 px-4 py-3">
                 <div>
-                    <h2 id="conversationCenterTitle" class="text-xl font-bold">Mensajes con AL Forge</h2>
-                    <p class="text-xs text-slate-400">Consultas vinculadas a un producto; solo tú y el administrador pueden verlas.</p>
+                    <h2 id="conversationCenterTitle" class="text-sm font-bold">Mensajes con AL Forge</h2>
+                    <p class="text-[11px] text-slate-400">Consultas privadas sobre productos</p>
                 </div>
-                <span id="conversationCenterRole" class="text-xs text-cyan-300"></span>
+                <div class="flex items-center gap-2">
+                    <span id="conversationCenterRole" class="hidden text-[10px] text-cyan-300 sm:inline"></span>
+                    <button id="conversationClose" type="button" aria-label="Cerrar chat" class="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white">✕</button>
+                </div>
             </div>
-            <div class="grid gap-4 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(0,2fr)]">
-                <div id="conversationList" class="max-h-[28rem] space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm">
-                    <p class="text-slate-400">Todavía no hay conversaciones.</p>
+            <div class="space-y-3 p-3">
+                <div id="conversationList" class="max-h-28 space-y-2 overflow-y-auto text-xs">
+                    <p class="text-slate-400">Inicia sesión para ver tus conversaciones.</p>
                 </div>
-                <div class="flex min-h-[24rem] flex-col rounded-xl border border-slate-700 bg-slate-900 p-3">
-                    <div id="conversationTitle" class="border-b border-slate-700 pb-2 text-sm font-semibold text-cyan-300">Selecciona un producto o una conversación</div>
+                <div class="flex h-[min(24rem,48vh)] min-h-56 flex-col rounded-xl border border-slate-700 bg-slate-950/70 p-3">
+                    <div id="conversationTitle" class="border-b border-slate-700 pb-2 text-xs font-semibold text-cyan-300">Selecciona un producto o una conversación</div>
                     <div id="conversationMessages" class="my-3 flex-1 space-y-3 overflow-y-auto text-sm">
                         <p class="text-slate-500">Las conversaciones aparecerán aquí.</p>
                     </div>
                     <div id="conversationStatus" class="mb-2 hidden rounded-lg border p-2 text-xs" role="status" aria-live="polite"></div>
                     <form id="conversationMessageForm" class="hidden space-y-2 border-t border-slate-700 pt-3">
                         <textarea id="conversationMessageText" maxlength="2000" rows="2" placeholder="Escribe tu mensaje..." class="w-full resize-y rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm focus:border-cyan-400 focus:outline-none"></textarea>
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <label class="text-xs text-slate-400">Adjuntar imagen (JPG, PNG, WebP o GIF, hasta 5 MB)
-                                <input id="conversationImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="mt-1 block max-w-full text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-slate-700 file:px-2 file:py-1 file:text-cyan-300">
+                        <div class="flex items-center gap-2">
+                            <label for="conversationImageFile" aria-label="Adjuntar una imagen" title="Adjuntar imagen" class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 hover:text-cyan-300">
+                                <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z"/><circle cx="9" cy="9" r="1.3"/><path stroke-linecap="round" stroke-linejoin="round" d="m5 17 4-4 3 3 2-2 5 4"/></svg>
+                                <input id="conversationImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only">
                             </label>
-                            <button id="conversationSendButton" type="submit" class="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-400">Enviar mensaje</button>
+                            <span id="conversationImageName" class="min-w-0 flex-1 truncate text-[10px] text-slate-500">Imagen opcional · máx. 5 MB</span>
+                            <button id="conversationSendButton" type="submit" aria-label="Enviar mensaje" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-500 text-slate-950 hover:bg-cyan-400">
+                                <svg aria-hidden="true" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4 12 16-8-5 16-3-7-8-1Zm8 1 4-5"/></svg>
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
-        </section>
+            </section>
+            <button id="conversationToggle" type="button" aria-label="Abrir chat con AL Forge" aria-controls="conversationCenter" aria-expanded="false" class="group flex h-14 w-14 items-center justify-center rounded-full border border-cyan-300/30 bg-cyan-500 text-slate-950 shadow-lg shadow-cyan-950/40 transition hover:scale-105 hover:bg-cyan-400 focus:outline-none focus:ring-4 focus:ring-cyan-500/30">
+                <svg aria-hidden="true" class="h-7 w-7 transition group-hover:-rotate-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 20 11.5Z"/><path stroke-linecap="round" d="M8 11h8m-8 3h5"/></svg>
+            </button>
+        </div>
 
         <!-- Visor 3D Interactivo -->
         <section id="visor3d" class="bg-gradient-to-b from-slate-800 to-slate-850 p-6 rounded-2xl border border-slate-700 shadow-xl text-center">
@@ -588,6 +613,22 @@
             document.getElementById('deliveryFilter').addEventListener('change', renderPedidosAdmin);
             document.getElementById('adminPanel').addEventListener('click', gestionarAccionAdmin);
             document.getElementById('notificationList').addEventListener('click', gestionarNotificacion);
+            document.getElementById('notificationToggle').addEventListener('click', () => alternarPanelNotificaciones());
+            document.getElementById('notificationClose').addEventListener('click', () => alternarPanelNotificaciones(false));
+            document.getElementById('conversationToggle').addEventListener('click', () => alternarWidgetChat());
+            document.getElementById('conversationClose').addEventListener('click', () => alternarWidgetChat(false));
+            document.getElementById('conversationImageFile').addEventListener('change', evento => {
+                const nombre = evento.target.files[0]?.name || 'Imagen opcional · máx. 5 MB';
+                document.getElementById('conversationImageName').textContent = nombre;
+            });
+            document.addEventListener('click', evento => {
+                if (!evento.target.closest('#notificationPopover')) alternarPanelNotificaciones(false);
+                if (!evento.target.closest('#conversationWidget')) alternarWidgetChat(false);
+            });
+            document.addEventListener('keydown', evento => {
+                if (evento.key === 'Escape') alternarPanelNotificaciones(false);
+                if (evento.key === 'Escape') alternarWidgetChat(false);
+            });
             document.getElementById('listaComentarios').addEventListener('click', gestionarResena);
             document.getElementById('conversationList').addEventListener('click', gestionarAperturaConversacion);
             document.getElementById('conversationMessageForm').addEventListener('submit', enviarMensajeConversacion);
@@ -653,12 +694,13 @@
             document.getElementById('nombreForoUsuario').textContent = usuarioActual;
             document.getElementById('loginButton').classList.add('hidden');
             document.getElementById('logoutButton').classList.remove('hidden');
+            document.getElementById('notificationPopover').classList.remove('hidden');
+            alternarPanelNotificaciones(false);
             document.getElementById('adminPanel').classList.toggle('hidden', !data.is_admin);
             document.getElementById('adminNavLink').classList.toggle('hidden', !data.is_admin);
-            document.getElementById('notificationInbox').classList.remove('hidden');
-            document.getElementById('conversationCenter').classList.remove('hidden');
             document.getElementById('conversationCenterTitle').textContent = data.is_admin ? 'Consultas de clientes' : 'Mensajes con AL Forge';
             document.getElementById('conversationCenterRole').textContent = data.is_admin ? 'Bandeja de administración' : 'Atención por producto';
+            alternarWidgetChat(false);
             await cargarNotificaciones();
             try {
                 await cargarConversaciones();
@@ -815,8 +857,9 @@
                 document.getElementById('adminPanel').classList.add('hidden');
                 document.getElementById('adminNavLink').classList.add('hidden');
                 document.getElementById('myOrdersSection').classList.add('hidden');
-                document.getElementById('notificationInbox').classList.add('hidden');
-                document.getElementById('conversationCenter').classList.add('hidden');
+                document.getElementById('notificationPopover').classList.add('hidden');
+                alternarPanelNotificaciones(false);
+                alternarWidgetChat(false);
                 document.getElementById('logoutButton').classList.add('hidden');
                 document.getElementById('loginButton').classList.remove('hidden');
                 conversacionesCache = [];
@@ -828,6 +871,7 @@
                 document.getElementById('conversationMessages').innerHTML = '<p class="text-slate-500">Las conversaciones aparecerán aquí.</p>';
                 document.getElementById('conversationTitle').textContent = 'Selecciona un producto o una conversación';
                 document.getElementById('conversationMessageForm').classList.add('hidden');
+                document.getElementById('conversationImageName').textContent = 'Imagen opcional · máx. 5 MB';
                 await cargarProductos();
                 await cargarResenas();
                 mostrarEstado("Sesión cerrada.", "success");
@@ -848,6 +892,13 @@
             if (!data.length) {
                 contenedor.innerHTML = '<p class="text-sm text-slate-400">Todavía no hay productos publicados.</p>';
                 actualizarVisor3D([]);
+                if (perfilActual) {
+                    try {
+                        await cargarConversaciones();
+                    } catch (error) {
+                        mostrarEstadoMensajes(`No se pudo actualizar el chat: ${error.message}`);
+                    }
+                }
                 return;
             }
             actualizarVisor3D(data);
@@ -888,6 +939,13 @@
                     </article>`;
             }).join('');
             filtrarProductos();
+            if (perfilActual) {
+                try {
+                    await cargarConversaciones();
+                } catch (error) {
+                    mostrarEstadoMensajes(`No se pudo actualizar el chat: ${error.message}`);
+                }
+            }
         }
 
         function mostrarEstadoMensajes(mensaje, exito = false) {
@@ -896,18 +954,35 @@
             estado.textContent = mensaje;
         }
 
+        function alternarWidgetChat(abrir) {
+            const panel = document.getElementById('conversationCenter');
+            const boton = document.getElementById('conversationToggle');
+            if (!panel || !boton) return;
+            const debeAbrir = abrir ?? panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !debeAbrir);
+            boton.setAttribute('aria-expanded', String(debeAbrir));
+            boton.setAttribute('aria-label', debeAbrir ? 'Cerrar chat con AL Forge' : 'Abrir chat con AL Forge');
+            if (debeAbrir && !perfilActual) {
+                document.getElementById('modalLogin').classList.remove('hidden');
+                mostrarEstadoLogin("Inicia sesión para escribirle al administrador y adjuntar imágenes.");
+            } else if (debeAbrir && conversacionActualId) {
+                requestAnimationFrame(() => document.getElementById('conversationMessageText').focus());
+            }
+        }
+
         async function abrirChatProducto(productId) {
             productoPendienteChatId = productId;
             if (!perfilActual) {
+                alternarWidgetChat(true);
                 document.getElementById('modalLogin').classList.remove('hidden');
                 mostrarEstadoLogin("Inicia sesión para consultar este producto y conversar con el administrador.");
                 return;
             }
             if (perfilActual.is_admin) {
                 productoPendienteChatId = null;
+                alternarWidgetChat(true);
                 document.getElementById('conversationStatus').classList.add('hidden');
                 mostrarEstadoMensajes("El administrador puede responder desde la bandeja de consultas.");
-                document.getElementById('conversationCenter').scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
             }
 
@@ -962,7 +1037,7 @@
                 productoPendienteChatId = null;
                 conversacionActualId = conversacion.id;
                 await cargarConversaciones();
-                document.getElementById('conversationCenter').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                alternarWidgetChat(true);
             } catch (error) {
                 mostrarEstadoMensajes(`No se pudo abrir la consulta: ${error.message}. Comprueba que ejecutaste la versión actualizada de supabase-setup.sql.`);
             }
@@ -994,7 +1069,15 @@
             nombresConversacionCache = nombresClientes;
 
             const lista = document.getElementById('conversationList');
-            lista.innerHTML = conversacionesCache.length
+            const selectorNuevaConsulta = perfilActual.is_admin ? '' : `
+                <div class="flex gap-2">
+                    <select id="conversationNewProductSelect" aria-label="Producto para consultar" class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-800 px-2 py-2 text-xs text-slate-200">
+                        <option value="">Consultar un producto...</option>
+                        ${productosCache.map(producto => `<option value="${escaparHtml(producto.id)}">${escaparHtml(producto.name)}</option>`).join('')}
+                    </select>
+                    <button type="button" data-conversation-new class="shrink-0 rounded-lg border border-cyan-700 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-950">Nueva consulta</button>
+                </div>`;
+            const tarjetasConversaciones = conversacionesCache.length
                 ? conversacionesCache.map(conversacion => {
                     const nombre = perfilActual.is_admin
                         ? nombresClientes.get(conversacion.customer_id) || 'Cliente'
@@ -1004,7 +1087,8 @@
                         <span class="mt-1 block text-xs text-slate-400">${escaparHtml(nombre)} · ${fechaLegible(conversacion.updated_at)}</span>
                     </button>`;
                 }).join('')
-                : `<p class="p-2 text-slate-400">${perfilActual.is_admin ? 'Todavía no hay consultas de clientes.' : 'Todavía no tienes consultas. Pulsa «Consultar» en un producto para iniciar una conversación.'}</p>`;
+                : `<p class="p-2 text-slate-400">${perfilActual.is_admin ? 'Todavía no hay consultas de clientes.' : 'Elige un producto para enviar una consulta al administrador.'}</p>`;
+            lista.innerHTML = `${selectorNuevaConsulta}${tarjetasConversaciones}`;
 
             if (conversacionActualId && !conversacionesCache.some(item => item.id === conversacionActualId)) {
                 conversacionActualId = null;
@@ -1027,6 +1111,13 @@
         }
 
         async function gestionarAperturaConversacion(evento) {
+            const nuevaConsulta = evento.target.closest('button[data-conversation-new]');
+            if (nuevaConsulta && perfilActual && !perfilActual.is_admin) {
+                const selector = document.getElementById('conversationNewProductSelect');
+                if (selector?.value) await abrirChatProducto(selector.value);
+                else mostrarEstadoMensajes("Elige un producto para iniciar la consulta.");
+                return;
+            }
             const boton = evento.target.closest('button[data-conversation-open]');
             if (!boton || !perfilActual) return;
             conversacionActualId = boton.dataset.conversationOpen;
@@ -1523,6 +1614,9 @@
                         } else if (pedido.status === 'rejected') {
                             acciones = `<button data-order-action="pending" data-id="${pedido.id}" class="bg-amber-600 text-white font-bold px-3 py-1 rounded">Volver a pendiente</button>
                                 <button data-order-action="delete" data-id="${pedido.id}" class="bg-red-700 text-white font-bold px-3 py-1 rounded">Eliminar pedido</button>`;
+                        } else if (pedido.status === 'delivered') {
+                            acciones = `<button data-order-action="pending" data-id="${pedido.id}" class="bg-amber-600 text-white font-bold px-3 py-1 rounded">Volver a pendiente</button>
+                                <button data-order-action="delete" data-id="${pedido.id}" class="bg-red-700 text-white font-bold px-3 py-1 rounded">Eliminar pedido</button>`;
                         }
                         return renderTarjetaPedido(pedido, acciones);
                     }));
@@ -1647,6 +1741,15 @@
             return true;
         }
 
+        function alternarPanelNotificaciones(abrir) {
+            const panel = document.getElementById('notificationPanel');
+            const boton = document.getElementById('notificationToggle');
+            if (!panel || !boton) return;
+            const debeAbrir = abrir ?? panel.classList.contains('hidden');
+            panel.classList.toggle('hidden', !debeAbrir);
+            boton.setAttribute('aria-expanded', String(debeAbrir));
+        }
+
         async function cargarNotificaciones() {
             if (!perfilActual) return false;
             const { data, error } = await supabaseClient.from('notifications')
@@ -1659,9 +1762,18 @@
                 return false;
             }
             const noLeidas = data.filter(notificacion => !notificacion.read_at).length;
-            document.getElementById('notificationUnreadCount').textContent = noLeidas ? `(${noLeidas} sin leer)` : '(al día)';
+            const insignia = document.getElementById('notificationBadge');
+            insignia.textContent = noLeidas > 99 ? '99+' : String(noLeidas);
+            insignia.classList.toggle('hidden', noLeidas === 0);
+            document.getElementById('notificationToggle').setAttribute(
+                'aria-label',
+                noLeidas ? `Abrir notificaciones, ${noLeidas} sin leer` : 'Abrir notificaciones'
+            );
+            document.getElementById('notificationUnreadCount').textContent = noLeidas
+                ? `${noLeidas} sin leer`
+                : 'Estás al día';
             document.getElementById('notificationList').innerHTML = data.length
-                ? data.map(notificacion => `<article class="bg-slate-900 p-3 rounded-xl border ${notificacion.read_at ? 'border-slate-700' : 'border-cyan-600'} space-y-1">
+                ? data.map(notificacion => `<article class="p-3 rounded-lg border ${notificacion.read_at ? 'border-slate-700 bg-slate-800/60' : 'border-cyan-700 bg-cyan-950/30'} space-y-1">
                     <div class="flex flex-wrap justify-between gap-2"><strong>${escaparHtml(notificacion.title)}</strong><span class="text-xs text-slate-500">${fechaLegible(notificacion.created_at)}</span></div>
                     <p class="text-sm text-slate-300">${escaparHtml(notificacion.message)}</p>
                     ${notificacion.read_at ? '<span class="text-[10px] text-slate-500">Leída</span>' : `<button data-notification-read="${notificacion.id}" class="text-xs text-cyan-300 underline">Marcar como leída</button>`}
