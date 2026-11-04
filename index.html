@@ -6,6 +6,7 @@
     <title>alforge3dstudio | AL FORGE · 3D STUDIO</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
         body {
             background-color: #0b0e11;
@@ -16,6 +17,89 @@
                 linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
             background-size: auto, auto, 48px 48px, 48px 48px;
             background-attachment: fixed;
+        }
+        .viewer-stage {
+            position: relative;
+            isolation: isolate;
+            perspective: 1000px;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(14, 116, 144, 0.18), transparent 58%),
+                linear-gradient(145deg, #020617, #0b1320 55%, #090d12);
+            box-shadow: inset 0 0 48px rgba(14, 116, 144, 0.12), 0 0 24px rgba(6, 182, 212, 0.08);
+        }
+        .viewer-stage::before {
+            position: absolute;
+            z-index: -1;
+            inset: -50%;
+            content: "";
+            background: repeating-linear-gradient(transparent 0 31px, rgba(34, 211, 238, 0.055) 32px 33px);
+            transform: perspective(360px) rotateX(58deg) translateY(28%);
+            mask-image: linear-gradient(transparent, black 35%, black 70%, transparent);
+            animation: viewer-grid-drift 12s linear infinite;
+        }
+        .viewer-stage::after {
+            position: absolute;
+            z-index: -1;
+            inset: 0;
+            border: 1px solid rgba(34, 211, 238, 0.18);
+            border-radius: inherit;
+            content: "";
+            pointer-events: none;
+            box-shadow: inset 0 0 30px rgba(14, 116, 144, 0.08);
+        }
+        .viewer-orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10rem;
+            height: 10rem;
+            margin: -5rem 0 0 -5rem;
+            border: 1px solid rgba(34, 211, 238, 0.4);
+            border-radius: 50%;
+            transform: rotateX(68deg) rotateZ(-24deg);
+            box-shadow: 0 0 18px rgba(34, 211, 238, 0.16), inset 0 0 16px rgba(34, 211, 238, 0.1);
+            animation: viewer-orbit-turn 12s linear infinite;
+        }
+        .viewer-orbit::before,
+        .viewer-orbit::after {
+            position: absolute;
+            inset: 0.8rem;
+            border: 1px solid rgba(249, 115, 22, 0.32);
+            border-radius: 50%;
+            content: "";
+        }
+        .viewer-orbit::after {
+            inset: 1.7rem;
+            border-color: rgba(34, 211, 238, 0.24);
+        }
+        .viewer-core {
+            width: 2.4rem;
+            height: 2.4rem;
+            border: 1px solid rgba(251, 146, 60, 0.9);
+            border-radius: 0.55rem;
+            background: linear-gradient(145deg, rgba(249, 115, 22, 0.28), rgba(8, 145, 178, 0.2));
+            box-shadow: 0 0 24px rgba(249, 115, 22, 0.3), inset 0 0 12px rgba(34, 211, 238, 0.24);
+            transform: rotateX(58deg) rotateZ(45deg);
+            animation: viewer-core-float 3s ease-in-out infinite;
+        }
+        @keyframes viewer-grid-drift {
+            from { background-position-y: 0; }
+            to { background-position-y: 66px; }
+        }
+        @keyframes viewer-orbit-turn {
+            from { transform: rotateX(68deg) rotateZ(-24deg); }
+            to { transform: rotateX(68deg) rotateZ(336deg); }
+        }
+        @keyframes viewer-core-float {
+            0%, 100% { translate: 0 0; }
+            50% { translate: 0 -7px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .viewer-stage::before,
+            .viewer-orbit,
+            .viewer-core { animation: none; }
         }
     </style>
 </head>
@@ -87,6 +171,9 @@
                         <textarea id="adminProdDesc" placeholder="Descripción del producto..." class="w-full bg-slate-800 border border-slate-700 p-2 rounded"></textarea>
                         <label class="block font-semibold">Imagen del producto</label>
                         <input required type="file" id="adminProdImagen" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                        <label for="adminProdModelo" class="block font-semibold">Modelo 3D opcional (.glb o .gltf)</label>
+                        <input type="file" id="adminProdModelo" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                        <p class="text-[10px] text-slate-500">Los archivos .gltf deben incluir sus recursos dentro del archivo; se recomienda .glb.</p>
                         <div class="flex items-center gap-2">
                             <input type="checkbox" id="adminProdMayorista">
                             <label for="adminProdMayorista">Permite ventas por mayor</label>
@@ -102,7 +189,10 @@
                             <label for="adminProdOfertaChk" class="text-amber-400 font-semibold">¿Activar oferta?</label>
                             <input min="0" step="0.01" type="number" id="adminProdPrecioOferta" placeholder="Precio de oferta ($)" class="bg-slate-800 border border-slate-700 p-1 rounded w-36">
                         </div>
+                        <input min="0.01" max="99.99" step="0.01" type="number" id="adminProdPorcentajeOferta" placeholder="% de descuento opcional" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
+                        <p class="text-[10px] text-slate-500">Si completas el porcentaje, se calcula el precio final automáticamente. Si no, usa el precio de oferta manual.</p>
                         <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded">Guardar producto</button>
+                        <button type="button" id="cancelProductEditButton" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded">Cancelar edición</button>
                     </form>
                 </div>
 
@@ -122,6 +212,18 @@
                 </div>
             </div>
 
+            <section class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-4">
+                <div>
+                    <h3 class="font-bold text-sm text-cyan-400">Ventas</h3>
+                    <p class="text-xs text-slate-400">Suma de pedidos aceptados y entregados por su importe final.</p>
+                </div>
+                <div id="salesSummary" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <div><h4 class="text-xs font-semibold mb-2">Últimos 7 días</h4><div id="weeklySalesChart" class="flex items-end gap-2 h-40"></div></div>
+                    <div><h4 id="yearlySalesTitle" class="text-xs font-semibold mb-2">Ventas por mes</h4><div id="monthlySalesChart" class="grid grid-cols-6 sm:grid-cols-12 gap-2 h-40 items-end"></div></div>
+                </div>
+            </section>
+
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
                     <h3 class="font-bold text-sm text-cyan-400">Pedidos por revisar</h3>
@@ -130,12 +232,12 @@
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
                     <div class="flex flex-wrap justify-between items-center gap-2">
                         <h3 class="font-bold text-sm text-amber-400">Pendientes de entrega</h3>
-                        <label class="text-xs text-slate-400">Límite de entrega:
+                        <label class="text-xs text-slate-400">Fecha estimada:
                             <select id="deliveryFilter" class="bg-slate-800 border border-slate-700 rounded p-1">
                                 <option value="all">Todos</option>
                                 <option value="overdue">Vencidos</option>
-                                <option value="24">Próximas 24 h</option>
-                                <option value="72">Próximas 72 h</option>
+                                <option value="7">Próximos 7 días</option>
+                                <option value="30">Próximos 30 días</option>
                             </select>
                         </label>
                     </div>
@@ -157,15 +259,56 @@
             <div id="myOrdersList" class="space-y-3 text-sm"></div>
         </section>
 
+        <section id="notificationInbox" class="hidden bg-slate-800 border border-cyan-700/40 p-6 rounded-2xl space-y-4">
+            <h2 class="text-xl font-bold">Bandeja de notificaciones <span id="notificationUnreadCount" class="text-xs text-cyan-300"></span></h2>
+            <div id="notificationList" class="space-y-3 text-sm"></div>
+        </section>
+
+        <section id="conversationCenter" class="hidden bg-slate-800 border border-cyan-700/40 p-6 rounded-2xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 pb-3">
+                <div>
+                    <h2 id="conversationCenterTitle" class="text-xl font-bold">Mensajes con AL Forge</h2>
+                    <p class="text-xs text-slate-400">Consultas vinculadas a un producto; solo tú y el administrador pueden verlas.</p>
+                </div>
+                <span id="conversationCenterRole" class="text-xs text-cyan-300"></span>
+            </div>
+            <div class="grid gap-4 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(0,2fr)]">
+                <div id="conversationList" class="max-h-[28rem] space-y-2 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-3 text-sm">
+                    <p class="text-slate-400">Todavía no hay conversaciones.</p>
+                </div>
+                <div class="flex min-h-[24rem] flex-col rounded-xl border border-slate-700 bg-slate-900 p-3">
+                    <div id="conversationTitle" class="border-b border-slate-700 pb-2 text-sm font-semibold text-cyan-300">Selecciona un producto o una conversación</div>
+                    <div id="conversationMessages" class="my-3 flex-1 space-y-3 overflow-y-auto text-sm">
+                        <p class="text-slate-500">Las conversaciones aparecerán aquí.</p>
+                    </div>
+                    <div id="conversationStatus" class="mb-2 hidden rounded-lg border p-2 text-xs" role="status" aria-live="polite"></div>
+                    <form id="conversationMessageForm" class="hidden space-y-2 border-t border-slate-700 pt-3">
+                        <textarea id="conversationMessageText" maxlength="2000" rows="2" placeholder="Escribe tu mensaje..." class="w-full resize-y rounded-lg border border-slate-700 bg-slate-800 p-2 text-sm focus:border-cyan-400 focus:outline-none"></textarea>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <label class="text-xs text-slate-400">Adjuntar imagen (JPG, PNG, WebP o GIF, hasta 5 MB)
+                                <input id="conversationImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="mt-1 block max-w-full text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-slate-700 file:px-2 file:py-1 file:text-cyan-300">
+                            </label>
+                            <button id="conversationSendButton" type="submit" class="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-cyan-400">Enviar mensaje</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
         <!-- Visor 3D Interactivo -->
         <section id="visor3d" class="bg-gradient-to-b from-slate-800 to-slate-850 p-6 rounded-2xl border border-slate-700 shadow-xl text-center">
             <h1 class="text-2xl md:text-3xl font-bold mb-2">Explorador de Insumos en 3D</h1>
-            <p class="text-slate-400 text-sm mb-6">Visualiza los modelos antes de realizar tu compra.</p>
-            <div class="w-full h-64 bg-slate-950 rounded-xl flex flex-col items-center justify-center border border-dashed border-slate-700 relative overflow-hidden">
-                <div class="absolute inset-0 flex items-center justify-center opacity-20">
-                    <div class="w-40 h-40 border-4 border-cyan-400 rotate-45 animate-pulse"></div>
+            <p class="text-slate-400 text-sm mb-4">Arrastra para rotar y usa la rueda o el gesto de pellizco para acercar.</p>
+            <div class="mx-auto max-w-3xl space-y-3">
+                <select id="featuredModelSelect" class="hidden mx-auto max-w-sm bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm"></select>
+                <div class="viewer-stage h-64 w-full border border-cyan-900/50 md:h-96">
+                    <model-viewer id="featuredModelViewer" camera-controls auto-rotate auto-rotate-delay="1000" rotation-per-second="18deg" shadow-intensity="1" class="hidden h-full w-full"></model-viewer>
+                    <div id="featuredModelEmpty" class="absolute inset-0 flex flex-col items-center justify-center gap-4 text-sm text-slate-300">
+                        <span class="viewer-orbit" aria-hidden="true"></span>
+                        <span class="viewer-core relative z-10" aria-hidden="true"></span>
+                        <span class="relative z-10 max-w-[85%] rounded-full border border-cyan-800/60 bg-slate-950/75 px-4 py-2 text-center text-xs shadow-lg shadow-cyan-950/30 sm:text-sm">Todavía no hay modelos 3D publicados</span>
+                    </div>
                 </div>
-                <span class="text-cyan-400 font-semibold text-lg z-10">🎮 Lienzo 3D Activo</span>
             </div>
         </section>
 
@@ -232,7 +375,7 @@
             <h2 class="text-xl font-bold">Foro de Clientes & Reseñas</h2>
             
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
-                <h3 class="text-sm font-semibold text-cyan-400">Deja tu opinión (Publicando como: <span id="nombreForoUsuario" class="text-white font-bold">Invitado</span>)</h3>
+                <h3 class="text-sm font-semibold text-cyan-400">Deja tu opinión (cuenta: <span id="nombreForoUsuario" class="text-white font-bold">Inicia sesión para publicar</span>)</h3>
                 <textarea id="textoComentario" placeholder="Escribe tu comentario..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-400"></textarea>
                 
                 <!-- Sistema de estrellas seleccionable -->
@@ -250,23 +393,15 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
                     <div class="w-full sm:w-auto">
                         <label class="text-xs text-slate-400 block mb-1">Imagen opcional:</label>
-                        <input type="file" id="fotoComentario" class="text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700">
+                    <input type="file" id="fotoComentario" accept="image/jpeg,image/png,image/webp,image/gif" class="text-xs text-slate-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-cyan-400 hover:file:bg-slate-700">
                     </div>
-                    <button onclick="publicarComentario()" class="bg-cyan-500 text-slate-950 font-bold px-5 py-2 rounded-lg text-sm hover:bg-cyan-400">Publicar Comentario</button>
-                </div>
+                        <button id="reviewSubmitButton" onclick="publicarComentario()" class="bg-cyan-500 text-slate-950 font-bold px-5 py-2 rounded-lg text-sm hover:bg-cyan-400">Publicar Comentario</button>
+                        <button id="cancelReviewEditButton" class="hidden text-slate-300 text-sm hover:text-white">Cancelar edición</button>
+                    </div>
             </div>
 
             <!-- Lista de comentarios -->
-            <div id="listaComentarios" class="space-y-4">
-                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <span class="font-semibold text-sm text-cyan-300">CarlosMaker</span>
-                        <span class="text-amber-400 text-sm">★★★★★</span>
-                    </div>
-                    <p class="text-xs text-slate-300">Excelente calidad el filamento, rinde genial.</p>
-                    <span class="text-[10px] text-slate-500">Publicado sin foto</span>
-                </div>
-            </div>
+            <div id="listaComentarios" class="space-y-4"></div>
         </section>
 
     </main>
@@ -291,7 +426,7 @@
                     <p class="font-semibold text-cyan-400">Datos para transferencia:</p>
                     <p>Alias: <span class="font-mono text-white bg-slate-800 px-1 py-0.5 rounded">CUBESTORE.3D.MP</span></p>
                     <label class="block font-semibold mt-2">Subir comprobante de pago (captura):</label>
-                    <input type="file" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
+                    <input type="file" id="paymentProofFile" accept="image/jpeg,image/png,image/webp" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-slate-800 file:text-cyan-400">
                 </div>
                 <button onclick="solicitarPedido()" class="w-full bg-cyan-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm hover:bg-cyan-400">Solicitar Pedido</button>
             </div>
@@ -357,6 +492,14 @@
         let calificacionSeleccionada = 5;
         let carrito = [];
         let pedidosAdmin = [];
+        let edicionResenaId = null;
+        let edicionProductoId = null;
+        let productosCache = [];
+        let conversacionesCache = [];
+        let nombresConversacionCache = new Map();
+        let urlAdjuntoCache = new Map();
+        let conversacionActualId = null;
+        let productoPendienteChatId = null;
 
         function toggleModal(modalId) {
             document.getElementById(modalId).classList.toggle('hidden');
@@ -404,6 +547,21 @@
             return new Date(valor).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
         }
 
+        function crearNombreArchivo(archivo) {
+            const extension = archivo.name.split('.').pop().replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+            const id = window.crypto.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            return `${id}.${extension}`;
+        }
+
+        async function subirArchivo(bucket, ruta, archivo, contentType = archivo.type) {
+            const { error } = await supabaseClient.storage.from(bucket).upload(ruta, archivo, {
+                upsert: false,
+                contentType: contentType || 'application/octet-stream'
+            });
+            if (error) throw error;
+            return supabaseClient.storage.from(bucket).getPublicUrl(ruta).data.publicUrl;
+        }
+
         function inicializarAplicacion() {
             const configurado = !SUPABASE_URL.includes("TU-PROYECTO")
                 && !SUPABASE_ANON_KEY.includes("TU_CLAVE_PUBLICA")
@@ -420,15 +578,43 @@
                 }
             });
             document.getElementById('productForm').addEventListener('submit', guardarProducto);
+            document.getElementById('featuredModelSelect').addEventListener('change', () => actualizarVisor3D(productosCache));
+            document.getElementById('featuredModelViewer').addEventListener('error', () => {
+                mostrarEstado("No se pudo cargar el modelo 3D. Comprueba que sea un .glb válido o un .gltf con sus recursos integrados.", "error");
+            });
             document.getElementById('adminProdMayorista').addEventListener('change', evento => {
                 document.getElementById('wholesalePriceField').classList.toggle('hidden', !evento.target.checked);
             });
             document.getElementById('deliveryFilter').addEventListener('change', renderPedidosAdmin);
             document.getElementById('adminPanel').addEventListener('click', gestionarAccionAdmin);
+            document.getElementById('notificationList').addEventListener('click', gestionarNotificacion);
+            document.getElementById('listaComentarios').addEventListener('click', gestionarResena);
+            document.getElementById('conversationList').addEventListener('click', gestionarAperturaConversacion);
+            document.getElementById('conversationMessageForm').addEventListener('submit', enviarMensajeConversacion);
+            document.getElementById('adminProdOfertaChk').addEventListener('change', actualizarCamposOferta);
+            document.getElementById('adminProdPrecio').addEventListener('input', actualizarPrecioPorcentaje);
+            document.getElementById('adminProdPorcentajeOferta').addEventListener('input', actualizarPrecioPorcentaje);
+            document.getElementById('cancelProductEditButton').addEventListener('click', cancelarEdicionProducto);
+            actualizarCamposOferta();
             document.getElementById('contenedorProductos').addEventListener('click', evento => {
                 const boton = evento.target.closest('button[data-add-product]');
+                const botonEditar = evento.target.closest('button[data-edit-product]');
+                const botonChat = evento.target.closest('button[data-chat-product]');
                 if (boton) agregarAlCarrito(boton.dataset.id, boton.dataset.name, Number(boton.dataset.price));
+                if (botonEditar) iniciarEdicionProducto(botonEditar.dataset.editProduct);
+                if (botonChat) abrirChatProducto(botonChat.dataset.chatProduct);
             });
+            document.getElementById('cancelReviewEditButton').addEventListener('click', cancelarEdicionResena);
+            seleccionarEstrellas(calificacionSeleccionada);
+            setInterval(actualizarTemporizadores, 60000);
+            setInterval(() => {
+                if (perfilActual) cargarNotificaciones();
+            }, 60000);
+            setInterval(() => {
+                if (!perfilActual || document.getElementById('conversationCenter').classList.contains('hidden')) return;
+                cargarConversaciones().catch(error => mostrarEstadoMensajes(`No se pudieron actualizar los mensajes: ${error.message}`));
+                if (conversacionActualId) cargarMensajesConversacion(conversacionActualId).catch(error => mostrarEstadoMensajes(`No se pudieron actualizar los mensajes: ${error.message}`));
+            }, 20000);
             iniciarSesionExistente();
         }
 
@@ -438,9 +624,18 @@
                 if (error) throw error;
                 if (data.session) await cargarPerfil(data.session.user);
                 else ocultarEstado();
+            } catch (error) {
+                mostrarEstado(`No se pudo restaurar la sesión: ${error.message}`, "error");
+            }
+            try {
                 await cargarProductos();
             } catch (error) {
-                mostrarEstado(`No se pudo iniciar la aplicación: ${error.message}`, "error");
+                mostrarEstado(`No se pudo cargar el catálogo: ${error.message}`, "error");
+            }
+            try {
+                await cargarResenas();
+            } catch (error) {
+                mostrarEstado(`No se pudo cargar el foro. Comprueba que ejecutaste la versión actualizada de supabase-setup.sql: ${error.message}`, "error");
             }
         }
 
@@ -460,6 +655,19 @@
             document.getElementById('logoutButton').classList.remove('hidden');
             document.getElementById('adminPanel').classList.toggle('hidden', !data.is_admin);
             document.getElementById('adminNavLink').classList.toggle('hidden', !data.is_admin);
+            document.getElementById('notificationInbox').classList.remove('hidden');
+            document.getElementById('conversationCenter').classList.remove('hidden');
+            document.getElementById('conversationCenterTitle').textContent = data.is_admin ? 'Consultas de clientes' : 'Mensajes con AL Forge';
+            document.getElementById('conversationCenterRole').textContent = data.is_admin ? 'Bandeja de administración' : 'Atención por producto';
+            await cargarNotificaciones();
+            try {
+                await cargarConversaciones();
+                if (productoPendienteChatId && !data.is_admin) {
+                    await abrirChatProducto(productoPendienteChatId);
+                }
+            } catch (error) {
+                mostrarEstadoMensajes(`No se pudieron cargar las conversaciones. Comprueba que ejecutaste la versión actualizada de supabase-setup.sql: ${error.message}`);
+            }
 
             const autorizado = data.access_status === 'approved';
             document.getElementById('myOrdersSection').classList.toggle('hidden', !autorizado || data.is_admin);
@@ -507,6 +715,8 @@
                     if (error) throw error;
                     if (data.session) {
                         await cargarPerfil(data.user);
+                        await cargarProductos();
+                        await cargarResenas();
                         toggleModal('modalLogin');
                     } else {
                         mostrarEstadoLogin("Solicitud creada. Revisa tu correo para confirmar la cuenta y luego inicia sesión; el administrador deberá aprobar el acceso.", "success");
@@ -515,6 +725,8 @@
                     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                     if (error) throw error;
                     await cargarPerfil(data.user);
+                    await cargarProductos();
+                    await cargarResenas();
                     toggleModal('modalLogin');
                 }
             } catch (error) {
@@ -599,12 +811,25 @@
                 perfilActual = null;
                 usuarioActual = "Invitado";
                 document.getElementById('userInfoDisplay').textContent = "Invitado";
-                document.getElementById('nombreForoUsuario').textContent = "Invitado";
+                document.getElementById('nombreForoUsuario').textContent = "Inicia sesión para publicar";
                 document.getElementById('adminPanel').classList.add('hidden');
                 document.getElementById('adminNavLink').classList.add('hidden');
                 document.getElementById('myOrdersSection').classList.add('hidden');
+                document.getElementById('notificationInbox').classList.add('hidden');
+                document.getElementById('conversationCenter').classList.add('hidden');
                 document.getElementById('logoutButton').classList.add('hidden');
                 document.getElementById('loginButton').classList.remove('hidden');
+                conversacionesCache = [];
+                nombresConversacionCache = new Map();
+                urlAdjuntoCache = new Map();
+                conversacionActualId = null;
+                productoPendienteChatId = null;
+                document.getElementById('conversationList').innerHTML = '<p class="text-slate-400">Inicia sesión para consultar los mensajes.</p>';
+                document.getElementById('conversationMessages').innerHTML = '<p class="text-slate-500">Las conversaciones aparecerán aquí.</p>';
+                document.getElementById('conversationTitle').textContent = 'Selecciona un producto o una conversación';
+                document.getElementById('conversationMessageForm').classList.add('hidden');
+                await cargarProductos();
+                await cargarResenas();
                 mostrarEstado("Sesión cerrada.", "success");
             } catch (error) {
                 mostrarEstado(`No se pudo cerrar la sesión: ${error.message}`, "error");
@@ -618,20 +843,34 @@
                 .eq('is_active', true)
                 .order('created_at', { ascending: false });
             if (error) throw error;
+            productosCache = data;
             const contenedor = document.getElementById('contenedorProductos');
             if (!data.length) {
                 contenedor.innerHTML = '<p class="text-sm text-slate-400">Todavía no hay productos publicados.</p>';
+                actualizarVisor3D([]);
                 return;
             }
+            actualizarVisor3D(data);
             contenedor.innerHTML = data.map(producto => {
                 const precio = producto.on_sale && producto.sale_price != null ? producto.sale_price : producto.price;
-                const imagen = producto.image_url
+                const visual = producto.model_url
+                    ? `<model-viewer src="${escaparHtml(producto.model_url)}" ${producto.image_url ? `poster="${escaparHtml(producto.image_url)}"` : ''} alt="Modelo 3D de ${escaparHtml(producto.name)}" camera-controls auto-rotate shadow-intensity="1" class="h-52 w-full bg-slate-950"></model-viewer>`
+                    : producto.image_url
                     ? `<img src="${escaparHtml(producto.image_url)}" alt="${escaparHtml(producto.name)}" class="h-40 w-full object-cover">`
                     : '<div class="h-40 bg-slate-900 flex items-center justify-center text-slate-600 font-bold">Sin imagen</div>';
+                const descuento = producto.on_sale && Number(producto.price) > 0
+                    ? ((1 - Number(precio) / Number(producto.price)) * 100).toFixed(1)
+                    : 0;
+                const botonEditar = perfilActual?.is_admin
+                    ? `<button data-edit-product="${producto.id}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Editar</button>`
+                    : '';
+                const botonConsulta = perfilActual?.is_admin
+                    ? ''
+                    : `<button data-chat-product="${producto.id}" class="rounded-lg border border-cyan-700 px-3 py-1.5 text-sm font-semibold text-cyan-200 hover:bg-cyan-950">Consultar</button>`;
                 return `
                     <article class="producto-card bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg flex flex-col justify-between" data-nombre="${escaparHtml(producto.name.toLowerCase())}" data-categoria="${escaparHtml(producto.category)}">
                         <div>
-                            ${imagen}
+                            ${visual}
                             <div class="p-4 space-y-2">
                                 <span class="text-xs bg-cyan-500/10 text-cyan-400 font-semibold px-2 py-0.5 rounded">${escaparHtml(producto.category)}</span>
                                 <h3 class="font-bold text-lg">${escaparHtml(producto.name)}</h3>
@@ -642,13 +881,300 @@
                         <div class="p-4 pt-0 flex items-center justify-between">
                             <div>
                                 ${producto.on_sale ? `<span class="text-xs text-slate-500 line-through">${formatoPrecio(producto.price)}</span>` : ''}
-                                <div class="text-lg font-bold text-cyan-400">${formatoPrecio(precio)} ${producto.on_sale ? '<span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">OFERTA</span>' : ''}</div>
+                                <div class="text-lg font-bold text-cyan-400">${formatoPrecio(precio)} ${producto.on_sale ? `<span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">-${descuento}%</span>` : ''}</div>
                             </div>
-                            <button data-add-product data-id="${producto.id}" data-name="${escaparHtml(producto.name)}" data-price="${Number(precio)}" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button>
+                            <div class="flex flex-wrap justify-end gap-2">${botonEditar}${botonConsulta}<button data-add-product data-id="${producto.id}" data-name="${escaparHtml(producto.name)}" data-price="${Number(precio)}" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button></div>
                         </div>
                     </article>`;
             }).join('');
             filtrarProductos();
+        }
+
+        function mostrarEstadoMensajes(mensaje, exito = false) {
+            const estado = document.getElementById('conversationStatus');
+            estado.className = `mb-2 rounded-lg border p-2 text-xs ${exito ? 'border-emerald-700 bg-emerald-950 text-emerald-100' : 'border-red-700 bg-red-950 text-red-100'}`;
+            estado.textContent = mensaje;
+        }
+
+        async function abrirChatProducto(productId) {
+            productoPendienteChatId = productId;
+            if (!perfilActual) {
+                document.getElementById('modalLogin').classList.remove('hidden');
+                mostrarEstadoLogin("Inicia sesión para consultar este producto y conversar con el administrador.");
+                return;
+            }
+            if (perfilActual.is_admin) {
+                productoPendienteChatId = null;
+                document.getElementById('conversationStatus').classList.add('hidden');
+                mostrarEstadoMensajes("El administrador puede responder desde la bandeja de consultas.");
+                document.getElementById('conversationCenter').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            try {
+                document.getElementById('conversationStatus').classList.add('hidden');
+                let producto = productosCache.find(item => item.id === productId);
+                if (!producto) {
+                    const resultado = await supabaseClient.from('products')
+                        .select('id, name, is_active')
+                        .eq('id', productId)
+                        .eq('is_active', true)
+                        .maybeSingle();
+                    if (resultado.error) throw resultado.error;
+                    producto = resultado.data;
+                }
+                if (!producto) {
+                    mostrarEstadoMensajes("No se encontró el producto seleccionado. Actualiza el catálogo e inténtalo de nuevo.");
+                    return;
+                }
+
+                let { data: conversacion, error } = await supabaseClient
+                    .from('product_conversations')
+                    .select('id')
+                    .eq('customer_id', perfilActual.id)
+                    .eq('product_id', productId)
+                    .maybeSingle();
+                if (error) throw error;
+
+                if (!conversacion) {
+                    const resultado = await supabaseClient.from('product_conversations')
+                        .insert({
+                            customer_id: perfilActual.id,
+                            product_id: producto.id,
+                            product_name: producto.name
+                        })
+                        .select('id')
+                        .single();
+                    if (resultado.error && resultado.error.code === '23505') {
+                        const existente = await supabaseClient.from('product_conversations')
+                            .select('id')
+                            .eq('customer_id', perfilActual.id)
+                            .eq('product_id', productId)
+                            .single();
+                        if (existente.error) throw existente.error;
+                        conversacion = existente.data;
+                    } else {
+                        if (resultado.error) throw resultado.error;
+                        conversacion = resultado.data;
+                    }
+                }
+
+                productoPendienteChatId = null;
+                conversacionActualId = conversacion.id;
+                await cargarConversaciones();
+                document.getElementById('conversationCenter').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) {
+                mostrarEstadoMensajes(`No se pudo abrir la consulta: ${error.message}. Comprueba que ejecutaste la versión actualizada de supabase-setup.sql.`);
+            }
+        }
+
+        async function cargarConversaciones() {
+            if (!perfilActual) return;
+            const { data, error } = await supabaseClient.from('product_conversations')
+                .select('id, customer_id, product_id, product_name, created_at, updated_at')
+                .order('updated_at', { ascending: false })
+                .limit(100);
+            if (error) throw error;
+            conversacionesCache = data || [];
+
+            let nombresClientes = new Map();
+            if (perfilActual.is_admin && conversacionesCache.length) {
+                const idsClientes = [...new Set(conversacionesCache.map(item => item.customer_id))];
+                const { data: perfiles, error: errorPerfiles } = await supabaseClient.from('profiles')
+                    .select('id, full_name, email')
+                    .in('id', idsClientes);
+                if (errorPerfiles) throw errorPerfiles;
+                nombresClientes = new Map((perfiles || []).map(perfil => [
+                    perfil.id,
+                    perfil.full_name || perfil.email || 'Cliente'
+                ]));
+            } else if (!perfilActual.is_admin) {
+                nombresClientes.set(perfilActual.id, usuarioActual);
+            }
+            nombresConversacionCache = nombresClientes;
+
+            const lista = document.getElementById('conversationList');
+            lista.innerHTML = conversacionesCache.length
+                ? conversacionesCache.map(conversacion => {
+                    const nombre = perfilActual.is_admin
+                        ? nombresClientes.get(conversacion.customer_id) || 'Cliente'
+                        : 'Consulta sobre producto';
+                    return `<button type="button" data-conversation-open="${escaparHtml(conversacion.id)}" class="w-full rounded-lg border p-3 text-left ${conversacion.id === conversacionActualId ? 'border-cyan-500 bg-cyan-950/50' : 'border-slate-700 bg-slate-800 hover:border-slate-500'}">
+                        <span class="block font-semibold text-slate-100">${escaparHtml(conversacion.product_name)}</span>
+                        <span class="mt-1 block text-xs text-slate-400">${escaparHtml(nombre)} · ${fechaLegible(conversacion.updated_at)}</span>
+                    </button>`;
+                }).join('')
+                : `<p class="p-2 text-slate-400">${perfilActual.is_admin ? 'Todavía no hay consultas de clientes.' : 'Todavía no tienes consultas. Pulsa «Consultar» en un producto para iniciar una conversación.'}</p>`;
+
+            if (conversacionActualId && !conversacionesCache.some(item => item.id === conversacionActualId)) {
+                conversacionActualId = null;
+            }
+            if (!conversacionActualId && conversacionesCache.length) {
+                conversacionActualId = conversacionesCache[0].id;
+            }
+            if (conversacionActualId) {
+                lista.querySelectorAll('[data-conversation-open]').forEach(boton => {
+                    const activa = boton.dataset.conversationOpen === conversacionActualId;
+                    boton.classList.toggle('border-cyan-500', activa);
+                    boton.classList.toggle('bg-cyan-950/50', activa);
+                });
+                await cargarMensajesConversacion(conversacionActualId);
+            } else {
+                document.getElementById('conversationTitle').textContent = 'Selecciona un producto o una conversación';
+                document.getElementById('conversationMessages').innerHTML = '<p class="text-slate-500">Las conversaciones aparecerán aquí.</p>';
+                document.getElementById('conversationMessageForm').classList.add('hidden');
+            }
+        }
+
+        async function gestionarAperturaConversacion(evento) {
+            const boton = evento.target.closest('button[data-conversation-open]');
+            if (!boton || !perfilActual) return;
+            conversacionActualId = boton.dataset.conversationOpen;
+            document.getElementById('conversationStatus').classList.add('hidden');
+            document.getElementById('conversationList').querySelectorAll('[data-conversation-open]').forEach(item => {
+                const activa = item.dataset.conversationOpen === conversacionActualId;
+                item.classList.toggle('border-cyan-500', activa);
+                item.classList.toggle('bg-cyan-950/50', activa);
+            });
+            try {
+                await cargarMensajesConversacion(conversacionActualId);
+            } catch (error) {
+                mostrarEstadoMensajes(`No se pudo abrir la conversación: ${error.message}`);
+            }
+        }
+
+        async function cargarMensajesConversacion(conversationId) {
+            if (!conversationId) return;
+            const conversacion = conversacionesCache.find(item => item.id === conversationId);
+            if (!conversacion) return;
+            const { data, error } = await supabaseClient.from('product_conversation_messages')
+                .select('id, sender_id, body, attachment_path, created_at')
+                .eq('conversation_id', conversationId)
+                .order('created_at', { ascending: true })
+                .limit(100);
+            if (error) throw error;
+            if (conversationId !== conversacionActualId) return;
+
+            document.getElementById('conversationStatus').classList.add('hidden');
+            document.getElementById('conversationTitle').textContent = `${conversacion.product_name}${perfilActual.is_admin ? ` · ${nombresDeConversacion(conversacion)}` : ''}`;
+            document.getElementById('conversationMessageForm').classList.remove('hidden');
+            const contenedor = document.getElementById('conversationMessages');
+            const mensajes = await Promise.all((data || []).map(async mensaje => {
+                const urlAdjunto = mensaje.attachment_path
+                    ? await obtenerUrlAdjuntoConversacion(mensaje.attachment_path)
+                    : null;
+                const esPropio = mensaje.sender_id === perfilActual.id;
+                const autor = esPropio ? 'Tú' : perfilActual.is_admin
+                    ? nombresDeConversacion(conversacion)
+                    : 'AL Forge · Administración';
+                const imagen = urlAdjunto
+                    ? `<a href="${escaparHtml(urlAdjunto)}" target="_blank" rel="noopener noreferrer"><img src="${escaparHtml(urlAdjunto)}" alt="Imagen adjunta al mensaje" class="mt-2 max-h-56 max-w-full rounded-lg border border-slate-600 object-contain"></a>`
+                    : '';
+                return `<article class="max-w-[90%] rounded-xl border ${esPropio ? 'ml-auto border-cyan-800 bg-cyan-950/50' : 'border-slate-700 bg-slate-800'} p-3">
+                    <div class="mb-1 flex flex-wrap justify-between gap-2 text-[10px] text-slate-400"><strong>${escaparHtml(autor)}</strong><time>${fechaLegible(mensaje.created_at)}</time></div>
+                    ${mensaje.body ? `<p class="whitespace-pre-wrap break-words text-slate-100">${escaparHtml(mensaje.body)}</p>` : ''}
+                    ${imagen}
+                </article>`;
+            }));
+            if (conversationId !== conversacionActualId) return;
+            contenedor.innerHTML = mensajes.join('') || '<p class="text-slate-500">Aún no hay mensajes. Escribe el primero.</p>';
+            contenedor.scrollTop = contenedor.scrollHeight;
+        }
+
+        async function obtenerUrlAdjuntoConversacion(path) {
+            const almacenada = urlAdjuntoCache.get(path);
+            if (almacenada && almacenada.expira > Date.now()) return almacenada.url;
+            const { data, error } = await supabaseClient.storage.from('conversation-images').createSignedUrl(path, 3600);
+            if (error) throw error;
+            urlAdjuntoCache.set(path, { url: data.signedUrl, expira: Date.now() + 3500000 });
+            return data.signedUrl;
+        }
+
+        function nombresDeConversacion(conversacion) {
+            return nombresConversacionCache.get(conversacion.customer_id) || 'Cliente';
+        }
+
+        async function enviarMensajeConversacion(evento) {
+            evento.preventDefault();
+            if (!perfilActual || !conversacionActualId) return;
+            const texto = document.getElementById('conversationMessageText').value.trim();
+            const archivo = document.getElementById('conversationImageFile').files[0];
+            const boton = document.getElementById('conversationSendButton');
+            if (!texto && !archivo) {
+                mostrarEstadoMensajes("Escribe un mensaje o adjunta una imagen.");
+                return;
+            }
+            if (texto.length > 2000) {
+                mostrarEstadoMensajes("El mensaje no puede superar los 2000 caracteres.");
+                return;
+            }
+            if (archivo && (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(archivo.type) || archivo.size > 5 * 1024 * 1024)) {
+                mostrarEstadoMensajes("La imagen debe ser JPG, PNG, WebP o GIF y no superar 5 MB.");
+                return;
+            }
+
+            boton.disabled = true;
+            let rutaAdjunto = null;
+            try {
+                if (archivo) {
+                    rutaAdjunto = `${conversacionActualId}/${perfilActual.id}/${crearNombreArchivo(archivo)}`;
+                    const { error } = await supabaseClient.storage.from('conversation-images').upload(rutaAdjunto, archivo, {
+                        upsert: false,
+                        contentType: archivo.type
+                    });
+                    if (error) throw error;
+                }
+
+                const { error } = await supabaseClient.from('product_conversation_messages').insert({
+                    conversation_id: conversacionActualId,
+                    sender_id: perfilActual.id,
+                    body: texto,
+                    attachment_path: rutaAdjunto
+                });
+                if (error) {
+                    if (rutaAdjunto) {
+                        const limpieza = await supabaseClient.storage.from('conversation-images').remove([rutaAdjunto]);
+                        if (limpieza.error) {
+                            throw new Error(`${error.message}. Además, no se pudo retirar la imagen: ${limpieza.error.message}`);
+                        }
+                    }
+                    throw error;
+                }
+                document.getElementById('conversationMessageText').value = '';
+                document.getElementById('conversationImageFile').value = '';
+                document.getElementById('conversationStatus').classList.add('hidden');
+                await cargarConversaciones();
+            } catch (error) {
+                mostrarEstadoMensajes(`No se pudo enviar el mensaje: ${error.message}`);
+            } finally {
+                boton.disabled = false;
+            }
+        }
+
+        function actualizarVisor3D(productos) {
+            const modelos = productos.filter(producto => producto.model_url);
+            const selector = document.getElementById('featuredModelSelect');
+            const visor = document.getElementById('featuredModelViewer');
+            const vacio = document.getElementById('featuredModelEmpty');
+            const modeloSeleccionadoId = selector.value;
+            if (!modelos.length) {
+                selector.classList.add('hidden');
+                visor.classList.add('hidden');
+                visor.removeAttribute('src');
+                visor.removeAttribute('poster');
+                vacio.classList.remove('hidden');
+                return;
+            }
+            selector.innerHTML = modelos.map(producto => `<option value="${escaparHtml(producto.id)}">${escaparHtml(producto.name)}</option>`).join('');
+            selector.classList.remove('hidden');
+            selector.value = modelos.some(producto => producto.id === modeloSeleccionadoId) ? modeloSeleccionadoId : modelos[0].id;
+            const seleccionado = modelos.find(producto => producto.id === selector.value) || modelos[0];
+            visor.src = seleccionado.model_url;
+            if (seleccionado.image_url) visor.poster = seleccionado.image_url;
+            else visor.removeAttribute('poster');
+            visor.alt = `Modelo 3D de ${seleccionado.name}`;
+            visor.classList.remove('hidden');
+            vacio.classList.add('hidden');
         }
 
         function agregarAlCarrito(id, producto, precio) {
@@ -688,18 +1214,64 @@
                 mostrarEstadoCarrito("Agrega productos publicados desde Supabase antes de enviar el pedido.");
                 return;
             }
+            const archivoComprobante = document.getElementById('paymentProofFile').files[0];
+            if (archivoComprobante && (!['image/jpeg', 'image/png', 'image/webp'].includes(archivoComprobante.type) || archivoComprobante.size > 5 * 1024 * 1024)) {
+                mostrarEstadoCarrito("El comprobante debe ser JPG, PNG o WebP y no superar 5 MB.");
+                return;
+            }
+            let rutaComprobante = null;
+            let comprobanteSubido = false;
+            let pedidoCreado = false;
             try {
+                if (archivoComprobante) {
+                    rutaComprobante = `${perfilActual.id}/${crearNombreArchivo(archivoComprobante)}`;
+                    const { error: errorSubida } = await supabaseClient.storage.from('order-proofs').upload(rutaComprobante, archivoComprobante, {
+                        upsert: false,
+                        contentType: archivoComprobante.type
+                    });
+                    if (errorSubida) throw errorSubida;
+                    comprobanteSubido = true;
+                }
                 const { error } = await supabaseClient.rpc('create_order', {
-                    order_items: carrito.map(item => ({ product_id: item.product_id, quantity: item.quantity }))
+                    order_items: carrito.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+                    p_payment_proof_path: rutaComprobante
                 });
                 if (error) throw error;
+                pedidoCreado = true;
                 carrito = [];
+                document.getElementById('paymentProofFile').value = '';
                 renderCarrito();
                 toggleModal('modalCarrito');
-                await cargarMisPedidos();
+            } catch (error) {
+                let detalle = error.message;
+                if (!pedidoCreado && comprobanteSubido) {
+                    const { error: errorLimpieza } = await supabaseClient.storage.from('order-proofs').remove([rutaComprobante]);
+                    if (errorLimpieza) detalle += ` Además, no se pudo retirar el comprobante temporal: ${errorLimpieza.message}`;
+                }
+                mostrarEstadoCarrito(`No se pudo enviar el pedido: ${detalle}`);
+                return;
+            }
+            try {
+                const pedidosActualizados = await cargarMisPedidos();
+                const notificacionesActualizadas = await cargarNotificaciones();
+                if (!pedidosActualizados || !notificacionesActualizadas) return;
                 mostrarEstado("Pedido enviado al administrador. Podrás consultar aquí su estado y los mensajes sobre la entrega.", "success");
             } catch (error) {
-                mostrarEstadoCarrito(`No se pudo enviar el pedido: ${error.message}`);
+                mostrarEstado("El pedido se guardó, pero no se pudieron actualizar tus pedidos o notificaciones: " + error.message, "error");
+            }
+        }
+
+        function actualizarCamposOferta() {
+            const activa = document.getElementById('adminProdOfertaChk').checked;
+            document.getElementById('adminProdPrecioOferta').disabled = !activa;
+            document.getElementById('adminProdPorcentajeOferta').disabled = !activa;
+        }
+
+        function actualizarPrecioPorcentaje() {
+            const precio = Number(document.getElementById('adminProdPrecio').value);
+            const porcentaje = document.getElementById('adminProdPorcentajeOferta').value;
+            if (porcentaje !== '' && Number.isFinite(precio) && precio > 0) {
+                document.getElementById('adminProdPrecioOferta').value = (precio * (1 - Number(porcentaje) / 100)).toFixed(2);
             }
         }
 
@@ -707,45 +1279,110 @@
             evento.preventDefault();
             if (!perfilActual?.is_admin) return;
             const archivo = document.getElementById('adminProdImagen').files[0];
+            const archivoModelo = document.getElementById('adminProdModelo').files[0];
+            const productoExistente = productosCache.find(producto => producto.id === edicionProductoId);
             const mayorista = document.getElementById('adminProdMayorista').checked;
             const oferta = document.getElementById('adminProdOfertaChk').checked;
             const precioMayorista = Number(document.getElementById('adminProdPrecioMayorista').value);
             const precioOferta = Number(document.getElementById('adminProdPrecioOferta').value);
+            const porcentajeOferta = document.getElementById('adminProdPorcentajeOferta').value;
             const precio = Number(document.getElementById('adminProdPrecio').value);
-            if (!archivo || (mayorista && (document.getElementById('adminProdPrecioMayorista').value === '' || !Number.isFinite(precioMayorista) || precioMayorista < 0)) || (oferta && (document.getElementById('adminProdPrecioOferta').value === '' || !Number.isFinite(precioOferta) || precioOferta < 0))) {
-                mostrarEstado("Selecciona una imagen y completa los precios requeridos para mayorista u oferta.", "error");
+            const extensionModelo = archivoModelo?.name.split('.').pop().toLowerCase();
+            const estabaEditando = Boolean(productoExistente);
+            if ((!archivo && !productoExistente) || (archivoModelo && !['glb', 'gltf'].includes(extensionModelo))
+                || (archivoModelo && archivoModelo.size > 20 * 1024 * 1024)
+                || (mayorista && (document.getElementById('adminProdPrecioMayorista').value === '' || !Number.isFinite(precioMayorista) || precioMayorista < 0))
+                || (oferta && (porcentajeOferta !== ''
+                    ? !Number.isFinite(Number(porcentajeOferta)) || Number(porcentajeOferta) <= 0 || Number(porcentajeOferta) >= 100 || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio
+                    : document.getElementById('adminProdPrecioOferta').value === '' || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio))) {
+                mostrarEstado("Selecciona una imagen válida, un modelo .glb/.gltf de hasta 20 MB si corresponde y completa correctamente los precios.", "error");
                 return;
             }
+            const archivosSubidos = [];
+            let productoGuardado = false;
             try {
-                const extension = archivo.name.split('.').pop().replace(/[^a-zA-Z0-9]/g, '') || 'image';
-                const nombreArchivo = window.crypto.randomUUID
-                    ? window.crypto.randomUUID()
-                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                const ruta = `${perfilActual.id}/${nombreArchivo}.${extension}`;
-                const { error: uploadError } = await supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).upload(ruta, archivo, { upsert: false });
-                if (uploadError) throw uploadError;
-                const { data: imagenPublica } = supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(ruta);
+                let imagenUrl = productoExistente?.image_url || null;
+                if (archivo) {
+                    const ruta = `${perfilActual.id}/${crearNombreArchivo(archivo)}`;
+                    imagenUrl = await subirArchivo(PRODUCT_IMAGE_BUCKET, ruta, archivo);
+                    archivosSubidos.push(ruta);
+                }
+                let modeloUrl = productoExistente?.model_url || null;
+                if (archivoModelo) {
+                    const mimeModelo = extensionModelo === 'glb' ? 'model/gltf-binary' : 'model/gltf+json';
+                    const ruta = `${perfilActual.id}/${crearNombreArchivo(archivoModelo)}`;
+                    modeloUrl = await subirArchivo(PRODUCT_IMAGE_BUCKET, ruta, archivoModelo, mimeModelo);
+                    archivosSubidos.push(ruta);
+                }
                 const producto = {
                     name: document.getElementById('adminProdNombre').value.trim(),
                     price: precio,
                     category: document.getElementById('adminProdCat').value,
                     description: document.getElementById('adminProdDesc').value.trim(),
-                    image_url: imagenPublica.publicUrl,
+                    image_url: imagenUrl,
+                    model_url: modeloUrl,
                     wholesale_enabled: mayorista,
                     wholesale_price: mayorista ? precioMayorista : null,
                     wholesale_min_quantity: mayorista ? Number(document.getElementById('adminProdCantidadMayorista').value) : null,
                     on_sale: oferta,
                     sale_price: oferta ? precioOferta : null
                 };
-                const { error } = await supabaseClient.from('products').insert(producto);
+                const resultado = productoExistente
+                    ? await supabaseClient.from('products').update(producto).eq('id', productoExistente.id)
+                    : await supabaseClient.from('products').insert(producto);
+                const { error } = resultado;
                 if (error) throw error;
+                productoGuardado = true;
+                cancelarEdicionProducto();
                 evento.target.reset();
                 document.getElementById('wholesalePriceField').classList.add('hidden');
+                actualizarCamposOferta();
                 await cargarProductos();
-                mostrarEstado("Producto guardado y publicado.", "success");
+                mostrarEstado(estabaEditando ? "Producto actualizado." : "Producto guardado y publicado.", "success");
             } catch (error) {
-                mostrarEstado(`No se pudo guardar el producto: ${error.message}`, "error");
+                let detalle = error.message;
+                if (!productoGuardado && archivosSubidos.length) {
+                    const { error: errorLimpieza } = await supabaseClient.storage.from(PRODUCT_IMAGE_BUCKET).remove(archivosSubidos);
+                    if (errorLimpieza) detalle += ` Además, no se pudieron retirar archivos temporales: ${errorLimpieza.message}`;
+                }
+                mostrarEstado(`${productoGuardado ? 'El producto se guardó, pero no se pudo actualizar el catálogo' : 'No se pudo guardar el producto'}: ${detalle}`, "error");
             }
+        }
+
+        function iniciarEdicionProducto(id) {
+            if (!perfilActual?.is_admin) return;
+            const producto = productosCache.find(item => item.id === id);
+            if (!producto) return;
+            edicionProductoId = id;
+            document.getElementById('adminProdNombre').value = producto.name;
+            document.getElementById('adminProdPrecio').value = producto.price;
+            document.getElementById('adminProdCat').value = producto.category;
+            document.getElementById('adminProdDesc').value = producto.description || '';
+            document.getElementById('adminProdImagen').required = false;
+            document.getElementById('adminProdMayorista').checked = producto.wholesale_enabled;
+            document.getElementById('adminProdPrecioMayorista').value = producto.wholesale_price ?? '';
+            document.getElementById('adminProdCantidadMayorista').value = producto.wholesale_min_quantity ?? 5;
+            document.getElementById('adminProdOfertaChk').checked = producto.on_sale;
+            document.getElementById('adminProdPrecioOferta').value = producto.sale_price ?? '';
+            document.getElementById('adminProdPorcentajeOferta').value = producto.on_sale && Number(producto.price)
+                ? ((1 - Number(producto.sale_price) / Number(producto.price)) * 100).toFixed(2)
+                : '';
+            document.getElementById('wholesalePriceField').classList.toggle('hidden', !producto.wholesale_enabled);
+            actualizarCamposOferta();
+            document.querySelector('#productForm button[type="submit"]').textContent = 'Guardar cambios';
+            document.getElementById('cancelProductEditButton').classList.remove('hidden');
+            document.getElementById('productForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelarEdicionProducto() {
+            edicionProductoId = null;
+            const formulario = document.getElementById('productForm');
+            formulario.reset();
+            document.getElementById('adminProdImagen').required = true;
+            document.getElementById('wholesalePriceField').classList.add('hidden');
+            document.querySelector('#productForm button[type="submit"]').textContent = 'Guardar producto';
+            document.getElementById('cancelProductEditButton').classList.add('hidden');
+            actualizarCamposOferta();
         }
 
         async function cargarDatosAdmin() {
@@ -759,7 +1396,8 @@
                 if (errorPedidos) throw errorPedidos;
                 pedidosAdmin = pedidos;
                 renderUsuarios(usuarios);
-                renderPedidosAdmin();
+                await renderPedidosAdmin();
+                renderGraficoVentas(pedidos);
             } catch (error) {
                 mostrarEstado(`No se pudieron cargar los datos de administración: ${error.message}`, "error");
             }
@@ -785,21 +1423,70 @@
             });
         }
 
-        function renderTarjetaPedido(pedido, acciones) {
+        async function urlComprobante(path) {
+            if (!path) return null;
+            const { data, error } = await supabaseClient.storage.from('order-proofs').createSignedUrl(path, 300);
+            if (error) throw error;
+            return data.signedUrl;
+        }
+
+        function fechaPedidoLegible(pedido) {
+            const fecha = fechaEntregaISO(pedido);
+            if (fecha) {
+                const [year, month, day] = fecha.split('-').map(Number);
+                return new Date(year, month - 1, day).toLocaleDateString('es-AR', { dateStyle: 'long' });
+            }
+            return '';
+        }
+
+        function fechaEntregaISO(pedido) {
+            if (pedido.delivery_date) return pedido.delivery_date;
+            if (!pedido.delivery_deadline) return '';
+            const fecha = new Date(pedido.delivery_deadline);
+            return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
+        }
+
+        function textoTemporizador(fecha) {
+            if (!fecha) return '';
+            const finDelDia = new Date(`${fecha}T23:59:59`);
+            const diferencia = finDelDia.getTime() - Date.now();
+            if (diferencia < 0) return ` · fecha estimada vencida hace ${Math.ceil(-diferencia / 86400000)} día(s)`;
+            const dias = Math.floor(diferencia / 86400000);
+            const horas = Math.floor((diferencia % 86400000) / 3600000);
+            return ` · quedan ${dias} día(s) y ${horas} h`;
+        }
+
+        function actualizarTemporizadores() {
+            document.querySelectorAll('[data-countdown-date]').forEach(elemento => {
+                elemento.textContent = textoTemporizador(elemento.dataset.countdownDate);
+            });
+        }
+
+        async function renderTarjetaPedido(pedido, acciones) {
             const productos = (pedido.items || []).map(item =>
                 `<li>${escaparHtml(item.product_name)} × ${Number(item.quantity)} — ${formatoPrecio(item.subtotal)}</li>`
             ).join('');
+            const fechaEntrega = fechaPedidoLegible(pedido);
+            const enlaceComprobante = pedido.payment_proof_path ? await urlComprobante(pedido.payment_proof_path) : null;
+            const comprobante = enlaceComprobante
+                ? `<a href="${escaparHtml(enlaceComprobante)}" target="_blank" rel="noopener noreferrer" class="inline-flex flex-col gap-1 text-cyan-300 underline"><img src="${escaparHtml(enlaceComprobante)}" alt="Comprobante de pago" class="max-h-40 max-w-full rounded object-contain">Ver comprobante de pago</a>`
+                : '<p class="text-slate-500">Sin comprobante adjunto.</p>';
+            const fechaTemporizador = fechaEntregaISO(pedido);
+            const temporizador = pedido.status === 'accepted' && fechaTemporizador
+                ? `<span data-countdown-date="${escaparHtml(fechaTemporizador)}">${escaparHtml(textoTemporizador(fechaTemporizador))}</span>`
+                : '';
             return `<article class="bg-slate-800 p-3 rounded space-y-2">
                 <p><strong>Cliente:</strong> ${escaparHtml(pedido.customer_name)} (${escaparHtml(pedido.customer_email)})</p>
                 <ul class="list-disc pl-5 text-slate-300">${productos}</ul>
                 <p><strong>Total:</strong> ${formatoPrecio(pedido.total)} · <span class="text-slate-400">${fechaLegible(pedido.created_at)}</span></p>
-                ${pedido.delivery_deadline ? `<p><strong>Plazo de entrega:</strong> ${fechaLegible(pedido.delivery_deadline)}</p>` : ''}
+                ${comprobante}
+                ${fechaEntrega ? `<p><strong>Fecha estimada:</strong> ${escaparHtml(fechaEntrega)}${temporizador}</p>` : ''}
                 ${pedido.rejection_reason ? `<p class="text-red-300"><strong>Motivo:</strong> ${escaparHtml(pedido.rejection_reason)}</p>` : ''}
                 ${acciones}
             </article>`;
         }
 
-        function renderPedidosAdmin() {
+        async function renderPedidosAdmin() {
             const listas = {
                 pending: document.getElementById('pendingOrdersList'),
                 accepted: document.getElementById('acceptedOrdersList'),
@@ -807,28 +1494,44 @@
                 delivered: document.getElementById('deliveredOrdersList')
             };
             const filtro = document.getElementById('deliveryFilter').value;
-            const ahora = Date.now();
-            const limite = filtro === '24' ? 24 * 60 * 60 * 1000 : filtro === '72' ? 72 * 60 * 60 * 1000 : null;
             Object.values(listas).forEach(lista => lista.innerHTML = '');
-            pedidosAdmin.forEach(pedido => {
-                let acciones = '';
-                if (pedido.status === 'pending') {
-                    acciones = `<label class="block">Plazo de entrega<input type="datetime-local" data-deadline-for="${pedido.id}" class="mt-1 w-full bg-slate-900 border border-slate-700 p-2 rounded"></label>
-                        <div class="flex flex-wrap gap-2"><button data-order-action="accepted" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Aceptar pedido</button><button data-order-action="rejected" data-id="${pedido.id}" class="bg-red-600 text-white font-bold px-3 py-1 rounded">Rechazar pedido</button></div>
-                        <textarea data-reason-for="${pedido.id}" placeholder="Motivo obligatorio si se rechaza" class="w-full bg-slate-900 border border-slate-700 p-2 rounded"></textarea>`;
-                } else if (pedido.status === 'accepted') {
-                    acciones = `<button data-order-action="delivered" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Marcar como entregado</button>`;
+            try {
+                const agrupados = { pending: [], accepted: [], rejected: [], delivered: [] };
+                pedidosAdmin.forEach(pedido => {
+                    if (pedido.status === 'accepted' && filtro !== 'all' && fechaEntregaISO(pedido)) {
+                        const hoy = new Date();
+                        hoy.setHours(0, 0, 0, 0);
+                        const entrega = new Date(`${fechaEntregaISO(pedido)}T00:00:00`);
+                        const dias = Math.floor((entrega.getTime() - hoy.getTime()) / 86400000);
+                        if (filtro === 'overdue' && dias >= 0) return;
+                        if (filtro !== 'overdue' && Number(filtro) && (dias < 0 || dias > Number(filtro))) return;
+                    }
+                    agrupados[pedido.status]?.push(pedido);
+                });
+
+                for (const [estado, lista] of Object.entries(listas)) {
+                    const tarjetas = await Promise.all(agrupados[estado].map(async pedido => {
+                        let acciones = '';
+                        if (pedido.status === 'pending') {
+                            acciones = `<label class="block">Fecha estimada de entrega<input type="date" min="${fechaHoyISO()}" data-date-for="${pedido.id}" class="mt-1 w-full bg-slate-900 border border-slate-700 p-2 rounded"></label>
+                                <div class="flex flex-wrap gap-2"><button data-order-action="accepted" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Aceptar pedido</button><button data-order-action="rejected" data-id="${pedido.id}" class="bg-red-600 text-white font-bold px-3 py-1 rounded">Rechazar pedido</button></div>
+                                <textarea data-reason-for="${pedido.id}" placeholder="Motivo obligatorio si se rechaza" class="w-full bg-slate-900 border border-slate-700 p-2 rounded"></textarea>`;
+                        } else if (pedido.status === 'accepted') {
+                            acciones = `<button data-order-action="delivered" data-id="${pedido.id}" class="bg-emerald-600 text-white font-bold px-3 py-1 rounded">Marcar como entregado</button>
+                                <button data-order-action="pending" data-id="${pedido.id}" class="bg-amber-600 text-white font-bold px-3 py-1 rounded">Volver a pendiente</button>
+                                <button data-order-action="delete" data-id="${pedido.id}" class="bg-red-700 text-white font-bold px-3 py-1 rounded">Eliminar pedido</button>`;
+                        } else if (pedido.status === 'rejected') {
+                            acciones = `<button data-order-action="pending" data-id="${pedido.id}" class="bg-amber-600 text-white font-bold px-3 py-1 rounded">Volver a pendiente</button>
+                                <button data-order-action="delete" data-id="${pedido.id}" class="bg-red-700 text-white font-bold px-3 py-1 rounded">Eliminar pedido</button>`;
+                        }
+                        return renderTarjetaPedido(pedido, acciones);
+                    }));
+                    lista.innerHTML = tarjetas.join('') || `<p class="text-slate-500">No hay pedidos ${estado === 'pending' ? 'por revisar' : estado === 'accepted' ? 'pendientes de entrega para este filtro' : estado === 'rejected' ? 'rechazados' : 'entregados'}.</p>`;
                 }
-                if (pedido.status === 'accepted' && filtro !== 'all') {
-                    const plazo = new Date(pedido.delivery_deadline).getTime();
-                    if (filtro === 'overdue' && plazo >= ahora) return;
-                    if (limite !== null && (plazo < ahora || plazo > ahora + limite)) return;
-                }
-                listas[pedido.status]?.insertAdjacentHTML('beforeend', renderTarjetaPedido(pedido, acciones));
-            });
-            Object.entries(listas).forEach(([estado, lista]) => {
-                if (!lista.innerHTML) lista.innerHTML = `<p class="text-slate-500">No hay pedidos ${estado === 'pending' ? 'por revisar' : estado === 'accepted' ? 'pendientes de entrega para este filtro' : estado === 'rejected' ? 'rechazados' : 'entregados'}.</p>`;
-            });
+                actualizarTemporizadores();
+            } catch (error) {
+                mostrarEstado(`No se pudieron mostrar los pedidos: ${error.message}`, "error");
+            }
         }
 
         async function gestionarAccionAdmin(evento) {
@@ -842,14 +1545,33 @@
                 } else {
                     const id = boton.dataset.id;
                     const estado = boton.dataset.orderAction;
+                    const pedido = pedidosAdmin.find(item => item.id === id);
+                    if (estado === 'delete') {
+                        if (!window.confirm("¿Eliminar este pedido definitivamente? El cliente recibirá una notificación y esta acción no se puede deshacer.")) return;
+                        const { error } = await supabaseClient.from('orders').delete().eq('id', id);
+                        if (error) throw error;
+                        let errorArchivo = null;
+                        if (pedido?.payment_proof_path) {
+                            const resultadoArchivo = await supabaseClient.storage.from('order-proofs').remove([pedido.payment_proof_path]);
+                            errorArchivo = resultadoArchivo.error;
+                        }
+                        await cargarDatosAdmin();
+                        mostrarEstado(errorArchivo
+                            ? `El pedido se eliminó, pero no se pudo borrar su comprobante: ${errorArchivo.message}`
+                            : "Pedido eliminado. El cliente recibirá una notificación en su bandeja.",
+                        errorArchivo ? "error" : "success");
+                        return;
+                    }
+                    if (estado === 'pending' && !window.confirm("¿Volver este pedido a pendiente? Se borrarán la fecha estimada y el motivo anterior, y se notificará al cliente.")) return;
                     const cambios = { status: estado };
                     if (estado === 'accepted') {
-                        const valorPlazo = document.querySelector(`[data-deadline-for="${id}"]`).value;
-                        if (!valorPlazo || new Date(valorPlazo).getTime() <= Date.now()) {
-                            mostrarEstado("Indica un plazo de entrega futuro antes de aceptar el pedido.", "error");
+                        const fecha = document.querySelector(`[data-date-for="${id}"]`).value;
+                        if (!fecha || fecha < fechaHoyISO()) {
+                            mostrarEstado("Indica una fecha estimada de hoy o futura antes de aceptar el pedido.", "error");
                             return;
                         }
-                        cambios.delivery_deadline = new Date(valorPlazo).toISOString();
+                        cambios.delivery_date = fecha;
+                        cambios.delivery_deadline = null;
                         cambios.rejection_reason = null;
                     } else if (estado === 'rejected') {
                         const motivo = document.querySelector(`[data-reason-for="${id}"]`).value.trim();
@@ -859,45 +1581,152 @@
                         }
                         cambios.rejection_reason = motivo;
                         cambios.delivery_deadline = null;
+                        cambios.delivery_date = null;
+                    } else if (estado === 'pending') {
+                        cambios.delivery_date = null;
+                        cambios.delivery_deadline = null;
+                        cambios.rejection_reason = null;
                     }
                     const { error } = await supabaseClient.from('orders').update(cambios).eq('id', id);
                     if (error) throw error;
                 }
                 await cargarDatosAdmin();
-                if (perfilActual.access_status === 'approved' && !perfilActual.is_admin) await cargarMisPedidos();
-                mostrarEstado("Cambio guardado. El cliente podrá ver el estado y el mensaje en su cuenta.", "success");
+                mostrarEstado("Cambio guardado. El cliente recibirá una notificación en su bandeja.", "success");
             } catch (error) {
                 mostrarEstado(`No se pudo guardar el cambio: ${error.message}`, "error");
             }
         }
 
+        function fechaHoyISO() {
+            const hoy = new Date();
+            return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        }
+
         async function cargarMisPedidos() {
-            if (!perfilActual || perfilActual.is_admin) return;
-            const { data, error } = await supabaseClient.from('orders').select('*').order('created_at', { ascending: false });
+            if (!perfilActual) return false;
+            if (perfilActual.is_admin) return true;
+            const { data, error } = await supabaseClient.from('orders').select('*')
+                .eq('user_id', perfilActual.id).order('created_at', { ascending: false });
             if (error) {
                 mostrarEstado(`No se pudieron cargar tus pedidos: ${error.message}`, "error");
-                return;
+                return false;
             }
             const contenedor = document.getElementById('myOrdersList');
             if (!data.length) {
                 contenedor.innerHTML = '<p class="text-slate-400">Todavía no tienes pedidos.</p>';
-                return;
+                return true;
             }
-            contenedor.innerHTML = data.map(pedido => {
+            const tarjetas = await Promise.all(data.map(async pedido => {
                 const estados = { pending: 'Pendiente de revisión', accepted: 'Pendiente de entrega', rejected: 'Rechazado', delivered: 'Entregado' };
                 const mensaje = pedido.status === 'accepted'
-                    ? `Pedido aceptado. Plazo de entrega: ${fechaLegible(pedido.delivery_deadline)}.`
+                    ? `Pedido aceptado. Fecha estimada de entrega: ${escaparHtml(fechaPedidoLegible(pedido))}.`
                     : pedido.status === 'rejected'
                         ? `Pedido rechazado. Motivo: ${escaparHtml(pedido.rejection_reason)}`
                         : pedido.status === 'delivered'
                             ? 'El pedido figura como entregado.'
                             : 'El pedido fue recibido y está pendiente de revisión.';
+                const enlaceComprobante = pedido.payment_proof_path ? await urlComprobante(pedido.payment_proof_path) : null;
+                const comprobante = enlaceComprobante
+                    ? `<p><a href="${escaparHtml(enlaceComprobante)}" target="_blank" rel="noopener noreferrer" class="text-cyan-300 underline"><img src="${escaparHtml(enlaceComprobante)}" alt="Comprobante enviado" class="max-h-40 max-w-full rounded object-contain">Ver comprobante enviado</a></p>`
+                    : '';
+                const fecha = fechaEntregaISO(pedido);
+                const temporizador = pedido.status === 'accepted' && fecha
+                    ? `<p class="text-xs text-slate-400">Temporizador estimado<span data-countdown-date="${escaparHtml(fecha)}">${escaparHtml(textoTemporizador(fecha))}</span></p>`
+                    : '';
                 return `<article class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2">
                     <p><strong>Pedido del ${fechaLegible(pedido.created_at)}</strong> · Estado: ${estados[pedido.status] || escaparHtml(pedido.status)}</p>
                     <p class="text-cyan-200">${mensaje}</p>
+                    ${temporizador}
                     <ul class="list-disc pl-5 text-slate-300">${(pedido.items || []).map(item => `<li>${escaparHtml(item.product_name)} × ${Number(item.quantity)} — ${formatoPrecio(item.subtotal)}</li>`).join('')}</ul>
                     <p class="font-bold">Total: ${formatoPrecio(pedido.total)}</p>
+                    ${comprobante}
                 </article>`;
+            }));
+            contenedor.innerHTML = tarjetas.join('');
+            actualizarTemporizadores();
+            return true;
+        }
+
+        async function cargarNotificaciones() {
+            if (!perfilActual) return false;
+            const { data, error } = await supabaseClient.from('notifications')
+                .select('id, title, message, read_at, created_at')
+                .eq('user_id', perfilActual.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+            if (error) {
+                mostrarEstado(`No se pudieron cargar las notificaciones: ${error.message}`, "error");
+                return false;
+            }
+            const noLeidas = data.filter(notificacion => !notificacion.read_at).length;
+            document.getElementById('notificationUnreadCount').textContent = noLeidas ? `(${noLeidas} sin leer)` : '(al día)';
+            document.getElementById('notificationList').innerHTML = data.length
+                ? data.map(notificacion => `<article class="bg-slate-900 p-3 rounded-xl border ${notificacion.read_at ? 'border-slate-700' : 'border-cyan-600'} space-y-1">
+                    <div class="flex flex-wrap justify-between gap-2"><strong>${escaparHtml(notificacion.title)}</strong><span class="text-xs text-slate-500">${fechaLegible(notificacion.created_at)}</span></div>
+                    <p class="text-sm text-slate-300">${escaparHtml(notificacion.message)}</p>
+                    ${notificacion.read_at ? '<span class="text-[10px] text-slate-500">Leída</span>' : `<button data-notification-read="${notificacion.id}" class="text-xs text-cyan-300 underline">Marcar como leída</button>`}
+                </article>`).join('')
+                : '<p class="text-slate-400">Todavía no tienes notificaciones.</p>';
+            return true;
+        }
+
+        async function gestionarNotificacion(evento) {
+            const boton = evento.target.closest('button[data-notification-read]');
+            if (!boton || !perfilActual) return;
+            const { error } = await supabaseClient.from('notifications')
+                .update({ read_at: new Date().toISOString() })
+                .eq('id', boton.dataset.notificationRead)
+                .eq('user_id', perfilActual.id);
+            if (error) {
+                mostrarEstado(`No se pudo marcar la notificación como leída: ${error.message}`, "error");
+                return;
+            }
+            await cargarNotificaciones();
+        }
+
+        function renderGraficoVentas(pedidos) {
+            const ventas = pedidos.filter(pedido => ['accepted', 'delivered'].includes(pedido.status));
+            const hoy = new Date();
+            const inicioSemana = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 6);
+            const totalesSemana = Array(7).fill(0);
+            const totalesMes = Array(12).fill(0);
+
+            ventas.forEach(pedido => {
+                const fecha = new Date(pedido.accepted_at || pedido.created_at);
+                const importe = Number(pedido.total) || 0;
+                if (fecha >= inicioSemana && fecha <= hoy) {
+                    const dia = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+                    const indice = Math.round((dia - inicioSemana) / 86400000);
+                    if (indice >= 0 && indice < totalesSemana.length) totalesSemana[indice] += importe;
+                }
+                if (fecha.getFullYear() === hoy.getFullYear()) totalesMes[fecha.getMonth()] += importe;
+            });
+
+            const totalSemana = totalesSemana.reduce((suma, valor) => suma + valor, 0);
+            const totalAno = totalesMes.reduce((suma, valor) => suma + valor, 0);
+            document.getElementById('salesSummary').innerHTML = `
+                <div class="bg-slate-800 p-3 rounded-lg"><p class="text-xs text-slate-400">Últimos 7 días</p><p class="text-lg font-bold text-emerald-300">${formatoPrecio(totalSemana)}</p></div>
+                <div class="bg-slate-800 p-3 rounded-lg"><p class="text-xs text-slate-400">Año ${hoy.getFullYear()}</p><p class="text-lg font-bold text-emerald-300">${formatoPrecio(totalAno)}</p></div>`;
+
+            const maxSemana = Math.max(...totalesSemana, 1);
+            document.getElementById('weeklySalesChart').innerHTML = totalesSemana.map((importe, indice) => {
+                const fecha = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + indice);
+                const altura = Math.max(importe ? importe / maxSemana * 100 : 0, importe ? 4 : 0);
+                return `<div class="flex-1 h-full flex flex-col justify-end items-center gap-1" title="${fecha.toLocaleDateString('es-AR')}: ${formatoPrecio(importe)}">
+                    <div class="w-full bg-cyan-500 rounded-t" style="height:${altura}%"></div>
+                    <span class="text-[9px] text-slate-400">${fecha.toLocaleDateString('es-AR', { weekday: 'short' })}</span>
+                </div>`;
+            }).join('');
+
+            const maxMes = Math.max(...totalesMes, 1);
+            document.getElementById('yearlySalesTitle').textContent = `Importe por mes · ${hoy.getFullYear()}`;
+            document.getElementById('monthlySalesChart').innerHTML = totalesMes.map((importe, indice) => {
+                const altura = Math.max(importe ? importe / maxMes * 100 : 0, importe ? 4 : 0);
+                const nombreMes = new Date(hoy.getFullYear(), indice, 1).toLocaleDateString('es-AR', { month: 'short' });
+                return `<div class="h-full min-w-0 flex flex-col justify-end items-center gap-1" title="${nombreMes}: ${formatoPrecio(importe)}">
+                    <div class="w-full bg-orange-500 rounded-t" style="height:${altura}%"></div>
+                    <span class="text-[9px] text-slate-400">${nombreMes}</span>
+                </div>`;
             }).join('');
         }
 
@@ -920,35 +1749,131 @@
             });
         }
 
-        function publicarComentario() {
-            const texto = document.getElementById('textoComentario').value.trim();
-            const inputFoto = document.getElementById('fotoComentario');
-            if (!texto) {
-                mostrarEstado("Escribe un comentario antes de publicar.", "error");
+        async function cargarResenas() {
+            const { data, error } = await supabaseClient.from('reviews')
+                .select('id, user_id, author_name, body, rating, image_url, created_at')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            const contenedor = document.getElementById('listaComentarios');
+            if (!data.length) {
+                contenedor.innerHTML = '<p class="text-slate-400">Todavía no hay opiniones publicadas.</p>';
                 return;
             }
-            const comentario = document.createElement('div');
-            comentario.className = "bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2";
-            const encabezado = document.createElement('div');
-            encabezado.className = "flex justify-between items-center";
-            const autor = document.createElement('span');
-            autor.className = "font-semibold text-sm text-cyan-300";
-            autor.textContent = usuarioActual;
-            const estrellas = document.createElement('span');
-            estrellas.className = "text-amber-400 text-sm";
-            estrellas.textContent = '★'.repeat(calificacionSeleccionada) + '☆'.repeat(5 - calificacionSeleccionada);
-            encabezado.append(autor, estrellas);
-            const cuerpo = document.createElement('p');
-            cuerpo.className = "text-xs text-slate-300";
-            cuerpo.textContent = texto;
-            const foto = document.createElement('span');
-            foto.className = "text-[10px] text-slate-500";
-            foto.textContent = inputFoto.files.length ? "Publicado con foto adjunta" : "Publicado sin foto";
-            comentario.append(encabezado, cuerpo, foto);
-            document.getElementById('listaComentarios').prepend(comentario);
+            contenedor.innerHTML = data.map(resena => {
+                const esAutor = perfilActual?.id === resena.user_id;
+                const acciones = [
+                    esAutor ? `<button data-review-edit="${resena.id}" class="text-cyan-300 underline">Editar</button>` : '',
+                    (esAutor || perfilActual?.is_admin) ? `<button data-review-delete="${resena.id}" class="text-red-300 underline">Eliminar</button>` : ''
+                ].filter(Boolean).join(' ');
+                return `<article class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <span class="font-semibold text-sm text-cyan-300">${escaparHtml(resena.author_name)}</span>
+                        <div class="flex items-center gap-3"><span class="text-amber-400 text-sm" aria-label="${Number(resena.rating)} de 5 estrellas">${'★'.repeat(resena.rating)}${'☆'.repeat(5 - resena.rating)}</span>${acciones}</div>
+                    </div>
+                    <p class="text-xs text-slate-300 whitespace-pre-wrap">${escaparHtml(resena.body)}</p>
+                    ${resena.image_url ? `<img src="${escaparHtml(resena.image_url)}" alt="Imagen adjunta a la opinión" class="max-h-64 rounded-lg object-contain">` : ''}
+                    <span class="text-[10px] text-slate-500">${fechaLegible(resena.created_at)}</span>
+                </article>`;
+            }).join('');
+        }
+
+        async function publicarComentario() {
+            if (!perfilActual) {
+                document.getElementById('modalLogin').classList.remove('hidden');
+                mostrarEstadoLogin("Inicia sesión con tu cuenta para publicar una opinión identificada.");
+                return;
+            }
+            const texto = document.getElementById('textoComentario').value.trim();
+            const inputFoto = document.getElementById('fotoComentario');
+            const archivo = inputFoto.files[0];
+            if (!texto || texto.length > 2000) {
+                mostrarEstado("Escribe un comentario de entre 1 y 2000 caracteres.", "error");
+                return;
+            }
+            if (archivo && (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(archivo.type) || archivo.size > 5 * 1024 * 1024)) {
+                mostrarEstado("La imagen debe ser JPG, PNG, WebP o GIF y no superar 5 MB.", "error");
+                return;
+            }
+
+            let rutaImagen = null;
+            let imagenSubida = false;
+            let resenaGuardada = false;
+            const estabaEditando = Boolean(edicionResenaId);
+            try {
+                let imageUrl = null;
+                if (edicionResenaId) {
+                    const actual = document.querySelector(`[data-review-edit="${edicionResenaId}"]`);
+                    const articulo = actual?.closest('article');
+                    imageUrl = articulo?.querySelector('img')?.src || null;
+                }
+                if (archivo) {
+                    rutaImagen = `${perfilActual.id}/${crearNombreArchivo(archivo)}`;
+                    imageUrl = await subirArchivo('community-photos', rutaImagen, archivo);
+                    imagenSubida = true;
+                }
+
+                const datos = {
+                    author_name: perfilActual.full_name || perfilActual.email,
+                    body: texto,
+                    rating: calificacionSeleccionada,
+                    image_url: imageUrl
+                };
+                const resultado = edicionResenaId
+                    ? await supabaseClient.from('reviews').update({ ...datos, updated_at: new Date().toISOString() })
+                        .eq('id', edicionResenaId).eq('user_id', perfilActual.id)
+                    : await supabaseClient.from('reviews').insert({ ...datos, user_id: perfilActual.id });
+                if (resultado.error) throw resultado.error;
+
+                resenaGuardada = true;
+                cancelarEdicionResena();
+                await cargarResenas();
+                mostrarEstado(estabaEditando ? "Opinión actualizada." : "Opinión publicada.", "success");
+            } catch (error) {
+                let detalle = error.message;
+                if (!resenaGuardada && imagenSubida) {
+                    const { error: errorLimpieza } = await supabaseClient.storage.from('community-photos').remove([rutaImagen]);
+                    if (errorLimpieza) detalle += ` Además, no se pudo retirar la imagen temporal: ${errorLimpieza.message}`;
+                }
+                mostrarEstado(`${resenaGuardada ? 'La opinión se guardó, pero no se pudo actualizar el foro' : 'No se pudo guardar la opinión'}: ${detalle}`, "error");
+            }
+        }
+
+        function cancelarEdicionResena() {
+            edicionResenaId = null;
             document.getElementById('textoComentario').value = '';
-            inputFoto.value = '';
-            mostrarEstado("Comentario publicado en el foro.", "success");
+            document.getElementById('fotoComentario').value = '';
+            document.getElementById('reviewSubmitButton').textContent = 'Publicar Comentario';
+            document.getElementById('cancelReviewEditButton').classList.add('hidden');
+        }
+
+        async function gestionarResena(evento) {
+            const editar = evento.target.closest('button[data-review-edit]');
+            const eliminar = evento.target.closest('button[data-review-delete]');
+            if (editar) {
+                const resenaId = editar.dataset.reviewEdit;
+                const { data, error } = await supabaseClient.from('reviews')
+                    .select('id, body, rating, user_id').eq('id', resenaId).eq('user_id', perfilActual?.id).single();
+                if (error) {
+                    mostrarEstado(`No se pudo abrir la opinión para editar: ${error.message}`, "error");
+                    return;
+                }
+                edicionResenaId = data.id;
+                document.getElementById('textoComentario').value = data.body;
+                document.getElementById('fotoComentario').value = '';
+                seleccionarEstrellas(data.rating);
+                document.getElementById('reviewSubmitButton').textContent = 'Guardar cambios';
+                document.getElementById('cancelReviewEditButton').classList.remove('hidden');
+                document.getElementById('textoComentario').focus();
+                return;
+            }
+            if (!eliminar || !window.confirm("¿Eliminar esta opinión? Esta acción no se puede deshacer.")) return;
+            const { error } = await supabaseClient.from('reviews').delete().eq('id', eliminar.dataset.reviewDelete);
+            if (error) {
+                mostrarEstado(`No se pudo eliminar la opinión: ${error.message}`, "error");
+                return;
+            }
+            await cargarResenas();
+            mostrarEstado("Opinión eliminada.", "success");
         }
 
         inicializarAplicacion();
