@@ -101,6 +101,114 @@
             .viewer-orbit,
             .viewer-core { animation: none; }
         }
+        body.light-theme {
+            background-color: #f4f1eb;
+            color: #26231f;
+            background-image:
+                radial-gradient(ellipse at 12% 8%, rgba(194, 91, 40, 0.07), transparent 34rem),
+                radial-gradient(ellipse at 88% 42%, rgba(14, 116, 144, 0.045), transparent 38rem),
+                linear-gradient(rgba(87, 75, 58, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(87, 75, 58, 0.035) 1px, transparent 1px);
+        }
+        body.light-theme header {
+            background: rgba(250, 248, 243, 0.94);
+            border-color: rgba(120, 93, 65, 0.18);
+            box-shadow: 0 8px 24px rgba(58, 47, 35, 0.06);
+        }
+        body.light-theme [class*="bg-slate-950"] { background-color: #e9e4da; }
+        body.light-theme [class*="bg-slate-900"] { background-color: #f3f0e9; }
+        body.light-theme [class*="bg-slate-800"] { background-color: #fcfbf8; }
+        body.light-theme [class*="bg-slate-700"] { background-color: #e7e2d9; }
+        body.light-theme [class*="bg-slate-600"] { background-color: #d7d0c4; }
+        body.light-theme [class~="text-slate-100"],
+        body.light-theme [class~="text-white"] { color: #26231f; }
+        body.light-theme [class~="text-slate-200"] { color: #36312b; }
+        body.light-theme [class~="text-slate-300"] { color: #49433b; }
+        body.light-theme [class~="text-slate-400"] { color: #6a6258; }
+        body.light-theme [class~="text-slate-500"] { color: #756c61; }
+        body.light-theme [class~="text-slate-600"] { color: #81786c; }
+        body.light-theme [class~="text-cyan-200"],
+        body.light-theme [class~="text-cyan-300"],
+        body.light-theme [class~="text-cyan-400"] { color: #087e8b; }
+        body.light-theme [class~="text-orange-300"] { color: #bd572c; }
+        body.light-theme [class~="text-emerald-100"],
+        body.light-theme [class~="text-emerald-300"],
+        body.light-theme [class~="text-emerald-400"] { color: #187451; }
+        body.light-theme [class~="text-amber-100"],
+        body.light-theme [class~="text-amber-300"],
+        body.light-theme [class~="text-amber-400"] { color: #9a5a08; }
+        body.light-theme [class~="text-red-100"],
+        body.light-theme [class~="text-red-200"],
+        body.light-theme [class~="text-red-300"],
+        body.light-theme [class~="text-red-400"] { color: #b54137; }
+        body.light-theme [class*="border-slate-700"],
+        body.light-theme [class*="border-slate-600"],
+        body.light-theme [class*="border-slate-800"] { border-color: #d8d1c6; }
+        body.light-theme [class*="border-cyan-"] { border-color: #b7dadd; }
+        body.light-theme [class*="border-orange-"] { border-color: #e6c6b5; }
+        body.light-theme [class*="bg-red-950"] { background-color: #fbecea; }
+        body.light-theme [class*="bg-red-900"] { background-color: #f4dbd7; }
+        body.light-theme [class*="bg-emerald-950"] { background-color: #e5f3ec; }
+        body.light-theme [class*="bg-emerald-900"] { background-color: #d7ecdf; }
+        body.light-theme [class*="bg-amber-950"] { background-color: #fbf0d7; }
+        body.light-theme [class*="bg-amber-900"] { background-color: #f4e3bf; }
+        body.light-theme [class*="bg-cyan-950"] { background-color: #e3f0ef; }
+        body.light-theme [class*="bg-cyan-900"] { background-color: #d2e8e8; }
+        body.light-theme [class*="bg-cyan-800"] { background-color: #c4e0e1; }
+        body.light-theme [class~="hover:text-white"]:hover { color: #26231f; }
+        body.light-theme input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        body.light-theme textarea,
+        body.light-theme select {
+            color: #26231f;
+            background-color: #fffefa;
+            border-color: #d8d1c6;
+        }
+        body.light-theme input::placeholder,
+        body.light-theme textarea::placeholder { color: #8a8175; }
+        body.light-theme input:disabled { color: #8a8175; background-color: #eeeae2; }
+        body.light-theme article.producto-card {
+            border-color: #ded8ce;
+            background-color: #fcfbf8;
+            box-shadow: 0 8px 24px rgba(58, 47, 35, 0.07);
+        }
+        body.light-theme .viewer-stage {
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(14, 116, 144, 0.11), transparent 58%),
+                linear-gradient(145deg, #e9e4da, #f8f6f1 55%, #e9e4da);
+            box-shadow: inset 0 0 48px rgba(14, 116, 144, 0.06), 0 0 24px rgba(6, 116, 144, 0.06);
+        }
+        .theme-toggle {
+            position: relative;
+            display: inline-flex;
+            width: 3.25rem;
+            height: 1.9rem;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0.35rem;
+            border: 1px solid #475569;
+            border-radius: 9999px;
+            background: #1e293b;
+            color: #cbd5e1;
+            transition: background-color 200ms ease, border-color 200ms ease;
+        }
+        .theme-toggle svg { position: relative; z-index: 1; width: 0.8rem; height: 0.8rem; }
+        .theme-toggle-thumb {
+            position: absolute;
+            top: 0.17rem;
+            left: 0.18rem;
+            width: 1.45rem;
+            height: 1.45rem;
+            border-radius: 50%;
+            background: #f8fafc;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+            transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 200ms ease;
+        }
+        .theme-toggle[aria-pressed="true"] { border-color: #d6cbb8; background: #e5ded2; color: #786143; }
+        .theme-toggle[aria-pressed="true"] .theme-toggle-thumb { transform: translateX(1.38rem); background: #fffefa; }
+        @media (prefers-reduced-motion: reduce) {
+            .theme-toggle, .theme-toggle-thumb { transition: none; }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans">
@@ -158,6 +266,11 @@
             </button>
             <button id="loginButton" onclick="toggleModal('modalLogin')" class="bg-cyan-500 text-slate-950 font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-cyan-400">Ingresar</button>
             <button id="logoutButton" onclick="cerrarSesion()" class="hidden bg-slate-700 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-600">Cerrar sesión</button>
+            <button id="themeToggle" type="button" aria-label="Cambiar al tema claro" aria-pressed="false" title="Cambiar tema" class="theme-toggle focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg>
+                <span class="theme-toggle-thumb"></span>
+            </button>
         </div>
     </header>
 
@@ -208,7 +321,11 @@
                             <input min="0" step="0.01" type="number" id="adminProdPrecioOferta" placeholder="Precio de oferta ($)" class="bg-slate-800 border border-slate-700 p-1 rounded w-36">
                         </div>
                         <input min="0.01" max="99.99" step="0.01" type="number" id="adminProdPorcentajeOferta" placeholder="% de descuento opcional" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
-                        <p class="text-[10px] text-slate-500">Si completas el porcentaje, se calcula el precio final automáticamente. Si no, usa el precio de oferta manual.</p>
+                        <div>
+                            <label for="adminProdDuracionOferta" class="block mb-1">Duración de la oferta (días)</label>
+                            <input min="1" max="3650" step="1" value="1" required type="number" id="adminProdDuracionOferta" class="w-full bg-slate-800 border border-slate-700 p-2 rounded">
+                        </div>
+                        <p class="text-[10px] text-slate-500">Si completas el porcentaje, se calcula el precio final automáticamente. La oferta vence al finalizar los días indicados.</p>
                         <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2 rounded">Guardar producto</button>
                         <button type="button" id="cancelProductEditButton" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded">Cancelar edición</button>
                     </form>
@@ -525,6 +642,8 @@
         let urlAdjuntoCache = new Map();
         let conversacionActualId = null;
         let productoPendienteChatId = null;
+        let edicionOfertaEndsAt = null;
+        let edicionDuracionOfertaInicial = '';
 
         function toggleModal(modalId) {
             document.getElementById(modalId).classList.toggle('hidden');
@@ -567,6 +686,60 @@
             return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }).format(Number(valor) || 0);
         }
 
+        function obtenerDescuentoOferta(producto) {
+            if (!ofertaVigente(producto) || Number(producto.price) <= 0) return 0;
+            return Math.max(0, (1 - Number(producto.sale_price) / Number(producto.price)) * 100);
+        }
+
+        function ofertaVigente(producto, ahora = Date.now()) {
+            return Boolean(producto.on_sale)
+                && (!producto.sale_ends_at || new Date(producto.sale_ends_at).getTime() > ahora);
+        }
+
+        function obtenerPrecioMayoristaOferta(producto) {
+            if (Number(producto.price) <= 0) return Number(producto.wholesale_price);
+            return Number((Number(producto.wholesale_price) * Number(producto.sale_price) / Number(producto.price)).toFixed(2));
+        }
+
+        function obtenerPrecioUnitarioCarrito(item) {
+            const producto = productosCache.find(itemProducto => itemProducto.id === item.product_id);
+            if (!producto) return item.price;
+            const ofertaActiva = ofertaVigente(producto);
+            if (producto.wholesale_enabled && item.quantity >= Number(producto.wholesale_min_quantity)) {
+                return ofertaActiva
+                    ? obtenerPrecioMayoristaOferta(producto)
+                    : Number(producto.wholesale_price);
+            }
+            return ofertaActiva ? Number(producto.sale_price) : Number(producto.price);
+        }
+
+        function aplicarTema(tema) {
+            const esClaro = tema === 'claro';
+            document.body.classList.toggle('light-theme', esClaro);
+            const boton = document.getElementById('themeToggle');
+            boton.setAttribute('aria-label', esClaro ? 'Cambiar al tema oscuro' : 'Cambiar al tema claro');
+            boton.setAttribute('aria-pressed', String(esClaro));
+        }
+
+        function inicializarTema() {
+            let temaGuardado = 'oscuro';
+            try {
+                temaGuardado = localStorage.getItem('tema') === 'claro' ? 'claro' : 'oscuro';
+            } catch (error) {
+                mostrarEstado(`No se pudo leer la preferencia de tema guardada: ${error.message}`, 'error');
+            }
+            aplicarTema(temaGuardado);
+            document.getElementById('themeToggle').addEventListener('click', () => {
+                const tema = document.body.classList.contains('light-theme') ? 'oscuro' : 'claro';
+                aplicarTema(tema);
+                try {
+                    localStorage.setItem('tema', tema);
+                } catch (error) {
+                    mostrarEstado(`El tema cambió, pero no se pudo guardar la preferencia: ${error.message}`, 'error');
+                }
+            });
+        }
+
         function fechaLegible(valor) {
             if (!valor) return "Sin fecha";
             return new Date(valor).toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
@@ -588,6 +761,7 @@
         }
 
         function inicializarAplicacion() {
+            inicializarTema();
             const configurado = !SUPABASE_URL.includes("TU-PROYECTO")
                 && !SUPABASE_ANON_KEY.includes("TU_CLAVE_PUBLICA")
                 && window.supabase?.createClient;
@@ -651,6 +825,7 @@
             document.getElementById('cancelReviewEditButton').addEventListener('click', cancelarEdicionResena);
             seleccionarEstrellas(calificacionSeleccionada);
             setInterval(actualizarTemporizadores, 60000);
+            setInterval(actualizarContadoresOferta, 1000);
             setInterval(() => {
                 if (perfilActual) cargarNotificaciones();
             }, 60000);
@@ -906,15 +1081,20 @@
             }
             actualizarVisor3D(data);
             contenedor.innerHTML = data.map(producto => {
-                const precio = producto.on_sale && producto.sale_price != null ? producto.sale_price : producto.price;
+                const ofertaActiva = ofertaVigente(producto);
+                const precio = ofertaActiva && producto.sale_price != null ? producto.sale_price : producto.price;
                 const visual = producto.model_url
                     ? `<model-viewer src="${escaparHtml(producto.model_url)}" ${producto.image_url ? `poster="${escaparHtml(producto.image_url)}"` : ''} alt="Modelo 3D de ${escaparHtml(producto.name)}" camera-controls auto-rotate shadow-intensity="1" class="h-52 w-full bg-slate-950"></model-viewer>`
                     : producto.image_url
                     ? `<img src="${escaparHtml(producto.image_url)}" alt="${escaparHtml(producto.name)}" class="h-40 w-full object-cover">`
                     : '<div class="h-40 bg-slate-900 flex items-center justify-center text-slate-600 font-bold">Sin imagen</div>';
-                const descuento = producto.on_sale && Number(producto.price) > 0
-                    ? ((1 - Number(precio) / Number(producto.price)) * 100).toFixed(1)
-                    : 0;
+                const descuento = obtenerDescuentoOferta(producto).toFixed(1);
+                const precioMayorista = producto.wholesale_enabled
+                    ? ofertaActiva ? obtenerPrecioMayoristaOferta(producto) : Number(producto.wholesale_price)
+                    : null;
+                const contadorOferta = ofertaActiva && producto.sale_ends_at
+                    ? `<div class="mt-1 text-[11px] font-medium text-amber-400" data-sale-countdown="${escaparHtml(producto.sale_ends_at)}" aria-live="off"></div>`
+                    : '';
                 const botonEditar = perfilActual?.is_admin
                     ? `<button data-edit-product="${producto.id}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Editar</button>
                         <button data-delete-product="${producto.id}" class="bg-red-900/80 hover:bg-red-800 text-white font-bold px-3 py-1.5 rounded-lg text-sm">Eliminar</button>`
@@ -930,18 +1110,22 @@
                                 <span class="text-xs bg-cyan-500/10 text-cyan-400 font-semibold px-2 py-0.5 rounded">${escaparHtml(producto.category)}</span>
                                 <h3 class="font-bold text-lg">${escaparHtml(producto.name)}</h3>
                                 <p class="text-xs text-slate-400">${escaparHtml(producto.description || '')}</p>
-                                <div class="text-xs ${producto.wholesale_enabled ? 'text-emerald-400' : 'text-slate-500'}">${producto.wholesale_enabled ? `Mayorista desde ${producto.wholesale_min_quantity} unidades: ${formatoPrecio(producto.wholesale_price)} c/u` : 'Venta mayorista no habilitada'}</div>
+                                <div class="text-xs ${producto.wholesale_enabled ? 'text-emerald-400' : 'text-slate-500'}">${producto.wholesale_enabled
+                                    ? `Mayorista desde ${producto.wholesale_min_quantity} unidades: ${ofertaActiva ? `<span class="line-through text-slate-500">${formatoPrecio(producto.wholesale_price)}</span> <span class="font-semibold">${formatoPrecio(precioMayorista)}</span> c/u <span class="text-red-400">-${descuento}%</span>` : `${formatoPrecio(precioMayorista)} c/u`}`
+                                    : 'Venta mayorista no habilitada'}</div>
+                                ${contadorOferta}
                             </div>
                         </div>
                         <div class="p-4 pt-0 flex items-center justify-between">
                             <div>
-                                ${producto.on_sale ? `<span class="text-xs text-slate-500 line-through">${formatoPrecio(producto.price)}</span>` : ''}
-                                <div class="text-lg font-bold text-cyan-400">${formatoPrecio(precio)} ${producto.on_sale ? `<span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">-${descuento}%</span>` : ''}</div>
+                                ${ofertaActiva ? `<span class="text-xs text-slate-500 line-through">${formatoPrecio(producto.price)}</span>` : ''}
+                                <div class="text-lg font-bold text-cyan-400">${formatoPrecio(precio)} ${ofertaActiva ? `<span class="text-xs bg-red-500/20 text-red-400 px-1 rounded">-${descuento}%</span>` : ''}</div>
                             </div>
                             <div class="flex flex-wrap justify-end gap-2">${botonEditar}${botonConsulta}<button data-add-product data-id="${producto.id}" data-name="${escaparHtml(producto.name)}" data-price="${Number(precio)}" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-sm">Comprar</button></div>
                         </div>
                     </article>`;
             }).join('');
+            actualizarContadoresOferta();
             filtrarProductos();
             if (perfilActual) {
                 try {
@@ -950,6 +1134,32 @@
                     mostrarEstadoMensajes(`No se pudo actualizar el chat: ${error.message}`);
                 }
             }
+        }
+
+        function actualizarContadoresOferta() {
+            const ahora = Date.now();
+            document.querySelectorAll('[data-sale-countdown]').forEach(contador => {
+                const fechaFin = new Date(contador.dataset.saleCountdown).getTime();
+                const segundosRestantes = Math.max(0, Math.floor((fechaFin - ahora) / 1000));
+                if (segundosRestantes === 0) {
+                    contador.textContent = 'Oferta finalizada';
+                    const tarjeta = contador.closest('.producto-card');
+                    if (tarjeta && tarjeta.dataset.saleExpiredRefreshing !== 'true') {
+                        tarjeta.dataset.saleExpiredRefreshing = 'true';
+                        renderCarrito();
+                        cargarProductos().catch(error => {
+                            mostrarEstado(`La oferta venció, pero no se pudo actualizar el catálogo: ${error.message}`, 'error');
+                        });
+                    }
+                    return;
+                }
+                const dias = Math.floor(segundosRestantes / 86400);
+                const horas = Math.floor((segundosRestantes % 86400) / 3600);
+                const minutos = Math.floor((segundosRestantes % 3600) / 60);
+                const segundos = segundosRestantes % 60;
+                const tiempo = [horas, minutos, segundos].map(valor => String(valor).padStart(2, '0')).join(':');
+                contador.textContent = `Oferta termina en ${dias ? `${dias} d ` : ''}${tiempo}`;
+            });
         }
 
         function mostrarEstadoMensajes(mensaje, exito = false) {
@@ -1286,14 +1496,17 @@
 
         function renderCarrito() {
             const cantidad = carrito.reduce((total, item) => total + item.quantity, 0);
-            const total = carrito.reduce((suma, item) => suma + item.price * item.quantity, 0);
             document.getElementById('cartCount').textContent = cantidad;
-            document.getElementById('cartTotal').textContent = formatoPrecio(total);
+            document.getElementById('cartTotal').textContent = formatoPrecio(
+                carrito.reduce((suma, item) => suma + obtenerPrecioUnitarioCarrito(item) * item.quantity, 0)
+            );
             document.getElementById('cartItemsList').innerHTML = carrito.length
-                ? carrito.map((item, indice) => `<article class="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/70 p-2">
+                ? carrito.map((item, indice) => {
+                    const precioUnitario = obtenerPrecioUnitarioCarrito(item);
+                    return `<article class="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/70 p-2">
                     <div class="min-w-0 flex-1">
                         <p class="truncate font-medium text-slate-100">${escaparHtml(item.name)}</p>
-                        <p class="text-xs text-cyan-300">${formatoPrecio(item.price * item.quantity)}</p>
+                        <p class="text-xs text-cyan-300">${formatoPrecio(precioUnitario)} c/u · ${formatoPrecio(precioUnitario * item.quantity)}</p>
                     </div>
                     <div class="flex shrink-0 items-center gap-1">
                         <button type="button" data-cart-decrease="${indice}" aria-label="Quitar una unidad de ${escaparHtml(item.name)}" class="h-7 w-7 rounded border border-slate-600 text-slate-200 hover:border-cyan-500 hover:text-cyan-300">−</button>
@@ -1303,7 +1516,8 @@
                             <svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16m-10 4v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
                         </button>
                     </div>
-                </article>`).join('')
+                </article>`;
+                }).join('')
                 : '<p class="text-slate-500 italic">No hay productos seleccionados.</p>';
         }
 
@@ -1405,6 +1619,7 @@
             const activa = document.getElementById('adminProdOfertaChk').checked;
             document.getElementById('adminProdPrecioOferta').disabled = !activa;
             document.getElementById('adminProdPorcentajeOferta').disabled = !activa;
+            document.getElementById('adminProdDuracionOferta').disabled = !activa;
         }
 
         function actualizarPrecioPorcentaje() {
@@ -1423,6 +1638,8 @@
             const productoExistente = productosCache.find(producto => producto.id === edicionProductoId);
             const mayorista = document.getElementById('adminProdMayorista').checked;
             const oferta = document.getElementById('adminProdOfertaChk').checked;
+            const duracionOfertaTexto = document.getElementById('adminProdDuracionOferta').value;
+            const duracionOferta = Number(duracionOfertaTexto);
             const precioMayorista = Number(document.getElementById('adminProdPrecioMayorista').value);
             const precioOferta = Number(document.getElementById('adminProdPrecioOferta').value);
             const porcentajeOferta = document.getElementById('adminProdPorcentajeOferta').value;
@@ -1436,10 +1653,11 @@
                 || (archivoModelo && !['glb', 'gltf'].includes(extensionModelo))
                 || (archivoModelo && archivoModelo.size > 20 * 1024 * 1024)
                 || (mayorista && (document.getElementById('adminProdPrecioMayorista').value === '' || !Number.isFinite(precioMayorista) || precioMayorista < 0))
+                || (oferta && (!Number.isInteger(duracionOferta) || duracionOferta < 1 || duracionOferta > 3650))
                 || (oferta && (porcentajeOferta !== ''
                     ? !Number.isFinite(Number(porcentajeOferta)) || Number(porcentajeOferta) <= 0 || Number(porcentajeOferta) >= 100 || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio
                     : document.getElementById('adminProdPrecioOferta').value === '' || !Number.isFinite(precioOferta) || precioOferta < 0 || precioOferta >= precio))) {
-                mostrarEstado("Sube una imagen JPG, PNG, WebP o GIF, un modelo .glb/.gltf o ambos. Cada archivo puede pesar hasta 20 MB; revisa también los precios.", "error");
+                mostrarEstado("Revisa los archivos, precios y duración de la oferta (entre 1 y 3650 días).", "error");
                 return;
             }
             const archivosSubidos = [];
@@ -1458,6 +1676,17 @@
                     modeloUrl = await subirArchivo(PRODUCT_IMAGE_BUCKET, ruta, archivoModelo, mimeModelo);
                     archivosSubidos.push(ruta);
                 }
+                const conservarVencimiento = oferta
+                    && productoExistente?.on_sale
+                    && productoExistente.sale_ends_at
+                    && new Date(productoExistente.sale_ends_at).getTime() > Date.now()
+                    && edicionOfertaEndsAt === productoExistente.sale_ends_at
+                    && duracionOfertaTexto === edicionDuracionOfertaInicial;
+                const venceOferta = oferta
+                    ? conservarVencimiento
+                        ? productoExistente.sale_ends_at
+                        : new Date(Date.now() + duracionOferta * 24 * 60 * 60 * 1000).toISOString()
+                    : null;
                 const producto = {
                     name: document.getElementById('adminProdNombre').value.trim(),
                     price: precio,
@@ -1469,7 +1698,8 @@
                     wholesale_price: mayorista ? precioMayorista : null,
                     wholesale_min_quantity: mayorista ? Number(document.getElementById('adminProdCantidadMayorista').value) : null,
                     on_sale: oferta,
-                    sale_price: oferta ? precioOferta : null
+                    sale_price: oferta ? precioOferta : null,
+                    sale_ends_at: venceOferta
                 };
                 const resultado = productoExistente
                     ? await supabaseClient.from('products').update(producto).eq('id', productoExistente.id)
@@ -1567,9 +1797,19 @@
             document.getElementById('adminProdMayorista').checked = producto.wholesale_enabled;
             document.getElementById('adminProdPrecioMayorista').value = producto.wholesale_price ?? '';
             document.getElementById('adminProdCantidadMayorista').value = producto.wholesale_min_quantity ?? 5;
-            document.getElementById('adminProdOfertaChk').checked = producto.on_sale;
+            const ofertaActiva = ofertaVigente(producto);
+            document.getElementById('adminProdOfertaChk').checked = ofertaActiva;
             document.getElementById('adminProdPrecioOferta').value = producto.sale_price ?? '';
-            document.getElementById('adminProdPorcentajeOferta').value = producto.on_sale && Number(producto.price)
+            edicionOfertaEndsAt = ofertaActiva ? producto.sale_ends_at || null : null;
+            const finOferta = producto.sale_ends_at ? new Date(producto.sale_ends_at).getTime() : 0;
+            const duracionRestante = finOferta > Date.now()
+                ? Math.max(1, Math.ceil((finOferta - Date.now()) / (24 * 60 * 60 * 1000)))
+                : 1;
+            edicionDuracionOfertaInicial = ofertaActiva && finOferta > Date.now()
+                ? String(duracionRestante)
+                : '';
+            document.getElementById('adminProdDuracionOferta').value = edicionDuracionOfertaInicial || '1';
+            document.getElementById('adminProdPorcentajeOferta').value = ofertaActiva && Number(producto.price)
                 ? ((1 - Number(producto.sale_price) / Number(producto.price)) * 100).toFixed(2)
                 : '';
             document.getElementById('wholesalePriceField').classList.toggle('hidden', !producto.wholesale_enabled);
@@ -1581,6 +1821,8 @@
 
         function cancelarEdicionProducto() {
             edicionProductoId = null;
+            edicionOfertaEndsAt = null;
+            edicionDuracionOfertaInicial = '';
             const formulario = document.getElementById('productForm');
             formulario.reset();
             document.getElementById('wholesalePriceField').classList.add('hidden');

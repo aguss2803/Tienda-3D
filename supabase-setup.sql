@@ -61,6 +61,7 @@ create table if not exists public.products (
     wholesale_min_quantity integer check (wholesale_min_quantity is null or wholesale_min_quantity >= 2),
     on_sale boolean not null default false,
     sale_price numeric(12, 2) check (sale_price is null or sale_price >= 0),
+    sale_ends_at timestamptz,
     is_active boolean not null default true,
     created_at timestamptz not null default now(),
     constraint valid_wholesale_price check (
@@ -105,6 +106,7 @@ create index if not exists orders_status_deadline_idx on public.orders (status, 
 create index if not exists profiles_status_idx on public.profiles (access_status);
 
 alter table public.products add column if not exists model_url text;
+alter table public.products add column if not exists sale_ends_at timestamptz;
 alter table public.products alter column image_url drop not null;
 alter table public.products drop constraint if exists products_has_media;
 alter table public.products add constraint products_has_media check (
@@ -541,7 +543,13 @@ begin
 
         if v_product.wholesale_enabled and v_quantity >= v_product.wholesale_min_quantity then
             v_unit_price := v_product.wholesale_price;
-        elsif v_product.on_sale then
+            if v_product.on_sale
+               and (v_product.sale_ends_at is null or v_product.sale_ends_at > now())
+               and v_product.price > 0 then
+                v_unit_price := round(v_unit_price * v_product.sale_price / v_product.price, 2);
+            end if;
+        elsif v_product.on_sale
+              and (v_product.sale_ends_at is null or v_product.sale_ends_at > now()) then
             v_unit_price := v_product.sale_price;
         else
             v_unit_price := v_product.price;
